@@ -1,0 +1,56 @@
+
+@reference "../../index.css";
+/* Sent Requests page styles. */
+
+
+.sr__title {
+  @apply text-3xl font-bold text-gray-900 mb-6;
+}
+
+.sr__list {
+  @apply flex flex-col gap-3;
+}
+
+.sr__item {
+  @apply bg-white border border-gray-200 rounded-2xl px-6 py-4 flex items-center justify-between gap-4 flex-wrap;
+}
+
+.sr__person {
+  @apply flex items-center gap-4;
+}
+
+.sr__avatar {
+  @apply w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 font-semibold flex items-center justify-center;
+}
+
+.sr__name {
+  @apply text-base font-bold text-gray-900;
+}
+
+.sr__position {
+  @apply text-sm text-indigo-600 mt-0.5;
+}
+
+.sr__right {
+  @apply flex items-center gap-4;
+}
+
+.sr__meta {
+  @apply text-right;
+}
+
+.sr__status {
+  @apply text-xs font-semibold px-3 py-1 rounded-full inline-block;
+}
+
+.sr__status--pending  { @apply bg-yellow-100 text-yellow-700; }
+.sr__status--accepted { @apply bg-green-100  text-green-700; }
+.sr__status--rejected { @apply bg-red-100    text-red-700; }
+
+.sr__sent {
+  @apply text-xs text-gray-500 mt-1;
+}
+
+.sr__follow {
+  @apply px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50;
+}

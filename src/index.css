@@ -1,4 +1,17 @@
+/* 
+  These 3 lines are REQUIRED for Tailwind to inject its styles.
+  They must be in your global CSS file.
+*/
+@import "tailwindcss";
+/* Global base styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-.main2{
-    background-color: red;
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8f9ff;
+  color: #1e1e2e;
 }

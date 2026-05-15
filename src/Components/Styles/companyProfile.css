@@ -1,0 +1,101 @@
+
+@reference "../../index.css";
+/* Company Profile page styles. */
+
+
+
+.cp__title {
+  @apply text-3xl font-bold text-gray-900 mb-6;
+}
+
+.cp__stats {
+  @apply grid grid-cols-1 md:grid-cols-3 gap-4 mb-6;
+}
+
+.cp__stat-card {
+  @apply rounded-2xl p-6 text-white relative overflow-hidden;
+}
+
+.cp__stat-card--primary {
+  @apply bg-gradient-to-br from-indigo-500 to-indigo-700;
+}
+
+.cp__stat-card--secondary {
+  @apply bg-gradient-to-br from-indigo-300 to-indigo-400;
+}
+
+.cp__stat-label {
+  @apply text-sm opacity-90;
+}
+
+.cp__stat-value {
+  @apply text-4xl font-bold mt-2;
+}
+
+.cp__stat-sub {
+  @apply text-xs opacity-80 mt-1;
+}
+
+.cp__stat-icon {
+  @apply absolute top-6 right-6 opacity-70;
+}
+
+.cp__card {
+  @apply bg-white rounded-2xl border border-gray-200 overflow-hidden;
+}
+
+.cp__banner {
+  @apply h-32 bg-gradient-to-r from-indigo-400 to-indigo-600;
+}
+
+.cp__avatar-wrap {
+  @apply px-8 -mt-12;
+}
+
+.cp__avatar {
+  @apply w-24 h-24 rounded-2xl bg-white border-4 border-white shadow-md flex items-center justify-center text-3xl font-bold text-indigo-600;
+}
+
+.cp__header {
+  @apply px-8 pt-4 pb-6 flex items-start justify-between flex-wrap gap-4;
+}
+
+.cp__name {
+  @apply text-2xl font-bold text-gray-900;
+}
+
+.cp__meta {
+  @apply flex items-center gap-3 mt-2;
+}
+
+.cp__status {
+  @apply text-xs font-semibold px-3 py-1 rounded-full bg-green-100 text-green-700;
+}
+
+.cp__industry {
+  @apply text-sm text-indigo-600 font-medium;
+}
+
+.cp__edit-btn {
+  @apply px-5 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors;
+}
+
+.cp__info-grid {
+  @apply px-8 pb-8 grid grid-cols-1 md:grid-cols-2 gap-6;
+}
+
+.cp__info-row {
+  @apply flex items-start gap-3;
+}
+
+.cp__info-icon {
+  @apply w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0;
+}
+
+.cp__info-label {
+  @apply text-xs text-indigo-600 font-medium;
+}
+
+.cp__info-value {
+  @apply text-sm text-gray-900 font-medium;
+}

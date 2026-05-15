@@ -1,0 +1,72 @@
+@reference "../../index.css";
+
+/* Shortlisted Candidates page styles. */
+
+
+.sl__title {
+  @apply text-3xl font-bold text-gray-900 mb-6;
+}
+
+.sl__banner {
+  @apply flex items-start gap-4 bg-indigo-50 border border-indigo-100 rounded-2xl p-6 mb-6;
+}
+
+.sl__banner-icon {
+  @apply w-10 h-10 rounded-lg bg-white text-indigo-600 flex items-center justify-center shrink-0;
+}
+
+.sl__banner-title {
+  @apply text-lg font-bold text-gray-900;
+}
+
+.sl__banner-text {
+  @apply text-sm text-gray-600 mt-1;
+}
+
+.sl__list {
+  @apply flex flex-col gap-3;
+}
+
+.sl__item {
+  @apply bg-white border border-gray-200 rounded-2xl px-6 py-4 flex items-center justify-between gap-4 flex-wrap;
+}
+
+.sl__person {
+  @apply flex items-center gap-4;
+}
+
+.sl__avatar {
+  @apply w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 font-semibold flex items-center justify-center;
+}
+
+.sl__name {
+  @apply text-base font-bold text-gray-900;
+}
+
+.sl__row {
+  @apply flex items-center gap-3 mt-1;
+}
+
+.sl__track {
+  @apply text-xs font-semibold px-3 py-1 rounded-md bg-indigo-50 text-indigo-700;
+}
+
+.sl__added {
+  @apply text-xs text-gray-500;
+}
+
+.sl__actions {
+  @apply flex items-center gap-2;
+}
+
+.sl__view {
+  @apply px-4 py-2 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50;
+}
+
+.sl__send {
+  @apply px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700;
+}
+
+.sl__remove {
+  @apply px-3 py-2 text-sm text-gray-500 hover:text-red-600;
+}

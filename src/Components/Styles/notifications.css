@@ -1,0 +1,37 @@
+
+@reference "../../index.css";
+/* Notifications page styles. */
+
+
+
+.nt__title {
+  @apply text-3xl font-bold text-gray-900 mb-6;
+}
+
+.nt__list {
+  @apply flex flex-col gap-4;
+}
+
+.nt__item {
+  @apply bg-white border border-gray-200 rounded-2xl p-6 flex items-start gap-4 relative;
+}
+
+.nt__item--unread {
+  @apply bg-indigo-50/60 border-indigo-100;
+}
+
+.nt__title-text {
+  @apply text-base font-bold text-gray-900;
+}
+
+.nt__message {
+  @apply text-sm text-gray-600 mt-1;
+}
+
+.nt__time {
+  @apply text-xs text-gray-400 mt-2;
+}
+
+.nt__dot {
+  @apply absolute top-6 right-6 w-2.5 h-2.5 rounded-full bg-indigo-500;
+}
