@@ -13,6 +13,7 @@ import ForgetPassword from './Auth/ForgetPassword/ForgetPassword'
 import VerifyCode from './Auth/VerifyCode/VerifyCode'
 import ResetPassword from './Auth/ResetPassword/ResetPassword'
 import SuccessResetPassword from './Auth/SuccessResetPassword/SuccessResetPassword'
+import DashboardAdmin from './Layouts/DashboardAdmin/DashboardAdmin'
 
 function App() {
 const router=createBrowserRouter([
@@ -30,7 +31,8 @@ const router=createBrowserRouter([
     {path:'verifycode' , element:<VerifyCode/>},
     {path:'resetpassword' , element:<ResetPassword/>},
     {path:'successresetpassword' , element:<SuccessResetPassword/>}
-  ]}
+  ]},
+  {path:'dashboardadmin' , element:<DashboardAdmin/>}
 ])
 
   return (
