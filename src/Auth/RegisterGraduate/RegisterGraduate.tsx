@@ -1,5 +1,6 @@
 import { useState } from "react"
 import registerImg from "../../../public/registergraduate.webp"
+import { Link } from "react-router-dom"
 
 export default function RegisterGraduate() {
   // State لتخزين التراك المختار (سواء frontend أو backend)
@@ -289,7 +290,7 @@ export default function RegisterGraduate() {
               <p className="text-center text-sm text-[#8b7bb8]">
                 Already have an account?{" "}
                 <span className="text-[#6D4AFF] font-medium cursor-pointer hover:underline">
-                  Sign in
+                <Link to="/login">Sign in</Link>
                 </span>
               </p>
 
