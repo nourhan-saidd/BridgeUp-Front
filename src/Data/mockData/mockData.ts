@@ -30,6 +30,10 @@ export const graduates: Graduate[] = [
   { id: "2", initials: "SM", name: "Sara Mahmoud",  track: "Backend Track",  iqScore: 94, englishScore: 88, technicalScore: 92 },
   { id: "3", initials: "OZ", name: "Omar Zaid",     track: "UI/UX Track",    iqScore: 81, englishScore: 90, technicalScore: 85 },
   { id: "4", initials: "LA", name: "Layla Ahmed",   track: "Full Stack Track", iqScore: 89, englishScore: 86, technicalScore: 90 },
+   { id: "4", initials: "LA", name: "Layla Ahmed",   track: "Full Stack Track", iqScore: 89, englishScore: 86, technicalScore: 90 },
+    { id: "4", initials: "LA", name: "Layla Ahmed",   track: "Full Stack Track", iqScore: 89, englishScore: 86, technicalScore: 90 },
+     { id: "4", initials: "LA", name: "Layla Ahmed",   track: "Full Stack Track", iqScore: 89, englishScore: 86, technicalScore: 90 },
+      { id: "4", initials: "LA", name: "Layla Ahmed",   track: "Full Stack Track", iqScore: 89, englishScore: 86, technicalScore: 90 },
 ];
 
 export const shortlisted: ShortlistedCandidate[] = [
