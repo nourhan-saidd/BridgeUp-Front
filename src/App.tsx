@@ -1,28 +1,50 @@
-// App — defines all routes for the BridgeUp company dashboard.
-// Drop this <App /> into your existing main.tsx (already wrapped in BrowserRouter).
-//
-// If your main.tsx doesn't have <BrowserRouter> yet, wrap it like:
-//   <BrowserRouter><App /></BrowserRouter>
-import { Routes, Route, Navigate } from "react-router-dom";
-import DashboardLayout from "./Layouts/DashboardLayout/DashboardLayout";
-import CompanyProfile from "./Pages/CompanyProfile/CompanyProfile";
-import BrowseGraduates from "./Pages/BrowseGraduates/BrowseGraduates";
-import Shortlisted from "./Pages/Shortlisted/Shortlisted";
-import SentRequests from "./Pages/SentRequests/SentRequests";
-import Notifications from "./Pages/Notifications/Notifications";
+import './App.css'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import Layout from './Layouts/Landingpage/Layout'
+import Home from './Pages/Home/Home'
+import About from './Pages/About/About'
+import HowItWork from './Pages/HowItWork/HowItWork'
+import Contact from './Pages/Contact/Contact'
+import Register from './Auth/Register/Register'
+import Login from './Auth/Login/Login'
+import RegisterGraduate from './Auth/RegisterGraduate/RegisterGraduate'
+import RegisterCompany from './Auth/RegisterCompany/RegisterCompany'
+import ForgetPassword from './Auth/ForgetPassword/ForgetPassword'
+import VerifyCode from './Auth/VerifyCode/VerifyCode'
+import ResetPassword from './Auth/ResetPassword/ResetPassword'
+import SuccessResetPassword from './Auth/SuccessResetPassword/SuccessResetPassword'
+import DashboardAdmin from './Layouts/DashboardAdmin/DashboardAdmin'
+import CompanyProfile from "./Pages/CompanyProfile/CompanyProfile"
+
+function App() {
+const router=createBrowserRouter([
+    {path:'/' , element:<Layout/> , children:[
+    {index:true,element:<Home/>},
+    {path:'home' , element:<Home/>},
+    {path:'about' , element:<About/>},
+    {path:'howitwork', element:<HowItWork/>},
+    {path:'contact' , element:<Contact/>} , 
+    {path:'register' , element:<Register/>},
+    {path:'login' , element :<Login/>} ,
+    {path:'registergraduate' , element:<RegisterGraduate/>},
+    {path:'registerCompany' , element:<RegisterCompany/>},
+    {path:'forgetpassword' , element:<ForgetPassword/>},
+    {path:'verifycode' , element:<VerifyCode/>},
+    {path:'resetpassword' , element:<ResetPassword/>},
+    {path:'successresetpassword' , element:<SuccessResetPassword/>},
+    {path="company-profile" , element :<CompanyProfile />},
+    {path="browse-graduates" , element :<BrowseGraduates />},
+    {path="shortlisted" , element :<Shortlisted />},
+    {path="sent-requests" , element :<SentRequests />},
+    {path="notifications" , element :<Notifications />},
+  ]},
+  {path:'dashboardadmin' , element:<DashboardAdmin/>}
+])
 
 export default function App() {
   return (
-    <Routes>
-      {/* Every dashboard route renders inside DashboardLayout (sidebar + content). */}
-      <Route element={<DashboardLayout />}>
-        <Route path="/" element={<Navigate to="/company-profile" replace />} />
-        <Route path="/company-profile"  element={<CompanyProfile />} />
-        <Route path="/browse-graduates" element={<BrowseGraduates />} />
-        <Route path="/shortlisted"      element={<Shortlisted />} />
-        <Route path="/sent-requests"    element={<SentRequests />} />
-        <Route path="/notifications"    element={<Notifications />} />
-      </Route>
-    </Routes>
-  );
+    <>
+    <RouterProvider router={router}/>
+    </>
+  )
 }
