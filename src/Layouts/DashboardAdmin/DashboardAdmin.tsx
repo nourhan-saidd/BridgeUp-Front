@@ -1,8 +1,9 @@
+import { Outlet } from "react-router-dom";
 
 export default function DashboardAdmin() {
   return (
     <>
-   <h1>helllllloooooooo</h1>
+ <Outlet/>
     </>
   )
 }

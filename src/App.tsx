@@ -14,6 +14,15 @@ import VerifyCode from './Auth/VerifyCode/VerifyCode'
 import ResetPassword from './Auth/ResetPassword/ResetPassword'
 import SuccessResetPassword from './Auth/SuccessResetPassword/SuccessResetPassword'
 import DashboardAdmin from './Layouts/DashboardAdmin/DashboardAdmin'
+import AssessmentsAdmin from './Pages/AssessmentsAdmin/AssessmentsAdmin'
+import CompaniesAdmin from './Pages/CompaniesAdmin/CompaniesAdmin'
+import GraduatesAdmin from './Pages/GraduatesAdmin/GraduatesAdmin'
+import OverViewAdmin from './Pages/OverViewAdmin/OverViewAdmin'
+import ReportsAdmin from './Layouts/DashboardAdmin/ReportsAdmin/ReportsAdmin'
+import RoadmapAdmin from './Layouts/DashboardAdmin/RoadmapAdmin/RoadmapAdmin'
+import StarCompanyAdmin from './Layouts/DashboardAdmin/StarCompanyAdmin/StarCompanyAdmin'
+import StarGraduatesAdmin from './Layouts/DashboardAdmin/StarGraduatesAdmin/StarGraduatesAdmin'
+import SupportMessageAdmin from './Layouts/DashboardAdmin/SupportMessageAdmin/SupportMessageAdmin'
 
 function App() {
 const router=createBrowserRouter([
@@ -32,7 +41,18 @@ const router=createBrowserRouter([
     {path:'resetpassword' , element:<ResetPassword/>},
     {path:'successresetpassword' , element:<SuccessResetPassword/>}
   ]},
-  {path:'dashboardadmin' , element:<DashboardAdmin/>}
+  {path:'/' , element:<DashboardAdmin/> , children:[
+    {path:'dashboardadmin' , element:<DashboardAdmin/> },
+     {path:'assessments' , element:<AssessmentsAdmin/>},
+     {path:'companies' , element:<CompaniesAdmin/>},
+     {path:'graduates' , element:<GraduatesAdmin/>},
+     {path:'overview' , element:<OverViewAdmin/>},
+     {path:'reports' , element:<ReportsAdmin/>},
+     {path:'roadmap' , element:<RoadmapAdmin/>},
+     {path:'starcompanies' , element:<StarCompanyAdmin/>},
+     {path:'stargraduates' , element:<StarGraduatesAdmin/>},
+     {path:'supportmessage' , element:<SupportMessageAdmin/>},
+  ]}
 ])
 
   return (
