@@ -1,7 +1,17 @@
 
 import { Link } from 'react-router-dom'
 
-export default function NavBar() {
+type LinkType = {
+  label: string;
+  path: string;
+};
+
+type Props = {
+  linksnavbar: LinkType[];
+};
+
+
+export default function NavBar({ linksnavbar }: Props) {
   return (
     <>
 
@@ -24,29 +34,18 @@ export default function NavBar() {
   {/* Links */}
   <div className="w-1/3">
     <ul className="flex items-center justify-between font-medium text-violet-950">
-      <li>
-        <Link to="/home" className="hover:bg-violet-300 px-3 py-1 rounded-lg transition">
-          Home
-        </Link>
-      </li>
 
-      <li>
-        <Link to="/about" className="hover:bg-violet-300 px-3 py-1 rounded-lg transition">
-          About
-        </Link>
-      </li>
-
-      <li>
-        <Link to="/contact" className="hover:bg-violet-300 px-3 py-1 rounded-lg transition">
-          Contact
-        </Link>
-      </li>
-
-      <li>
-        <Link to="/howitwork" className="hover:bg-violet-300 px-3 py-1 rounded-lg transition">
-          How It Works
-        </Link>
-      </li>
+          {linksnavbar.map((link) => (
+            <li key={link.path}>
+              <Link
+                to={link.path}
+                className="hover:bg-violet-300 px-3 py-1 rounded-lg transition"
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+  
     </ul>
   </div>
 
