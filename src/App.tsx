@@ -23,6 +23,12 @@ import RoadmapAdmin from "./Layouts/DashboardAdmin/RoadmapAdmin/RoadmapAdmin";
 import StarCompanyAdmin from "./Layouts/DashboardAdmin/StarCompanyAdmin/StarCompanyAdmin";
 import StarGraduatesAdmin from "./Layouts/DashboardAdmin/StarGraduatesAdmin/StarGraduatesAdmin";
 import SupportMessageAdmin from "./Layouts/DashboardAdmin/SupportMessageAdmin/SupportMessageAdmin";
+import DashboardCompany from "./Layouts/DashboardCompany/DashboardCompany";
+import BrowseGraduates from "./Layouts/DashboardCompany/BrowseGraduates/BrowseGraduates";
+import CompanyProfile from "./Layouts/DashboardCompany/CompanyProfile/CompanyProfile";
+import Notifications from "./Layouts/DashboardCompany/Notifications/Notifications";
+import SendRequests from "./Layouts/DashboardCompany/SendRequests/SendRequests";
+import ShortListed from "./Layouts/DashboardCompany/ShortListed/ShortListed";
 
 
 const router = createBrowserRouter([
@@ -61,6 +67,16 @@ const router = createBrowserRouter([
       { path: "supportmessage", element: <SupportMessageAdmin /> },
     ],
   },
+  {
+    path:'/dashboardCompany' , element:<DashboardCompany/> , children:[
+      {index:true , element:<CompanyProfile/>},
+      {path:"companyprofile" , element:<CompanyProfile/>},
+      {path:"browsegraduate" , element:<BrowseGraduates/>},
+      {path:"notifications" , element:<Notifications/>},
+      {path:"sendrequests" , element:<SendRequests/>},
+      {path:"shortlisted" , element:<ShortListed/>},
+    ]
+  }
 ]);
 function App() {
   return (
