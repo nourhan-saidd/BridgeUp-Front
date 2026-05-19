@@ -29,6 +29,13 @@ import CompanyProfile from "./Layouts/DashboardCompany/CompanyProfile/CompanyPro
 import Notifications from "./Layouts/DashboardCompany/Notifications/Notifications";
 import SendRequests from "./Layouts/DashboardCompany/SendRequests/SendRequests";
 import ShortListed from "./Layouts/DashboardCompany/ShortListed/ShortListed";
+import DashboardGraduate from "./Layouts/DashboardGraduate/DashboardGraduate";
+import ProfilePageGraduate from "./Layouts/DashboardGraduate/ProfilePageGraduate/ProfilePageGraduate";
+import RoadmapPageGraduate from "./Layouts/DashboardGraduate/RoadmapPageGraduate/RoadmapPageGraduate";
+import AssessmentsPageGraduate from "./Layouts/DashboardGraduate/AssessmentsPageGraduate/AssessmentsPageGraduate";
+import ScorePageGraduate from "./Layouts/DashboardGraduate/ScorePageGraduate/ScorePageGraduate";
+import JobofferPageGraduate from "./Layouts/DashboardGraduate/JobofferPageGraduate/JobofferPageGraduate";
+import NotificationPageGraduate from "./Layouts/DashboardGraduate/NotificationPageGraduate/NotificationPageGraduate";
 
 
 const router = createBrowserRouter([
@@ -68,13 +75,27 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path:'/dashboardCompany' , element:<DashboardCompany/> , children:[
+    path:'/dashboardCompany' , 
+     element:<DashboardCompany/> , children:[
       {index:true , element:<CompanyProfile/>},
       {path:"companyprofile" , element:<CompanyProfile/>},
       {path:"browsegraduate" , element:<BrowseGraduates/>},
       {path:"notifications" , element:<Notifications/>},
       {path:"sendrequests" , element:<SendRequests/>},
       {path:"shortlisted" , element:<ShortListed/>},
+    ]
+  }
+  ,
+  {
+    path:'dashboardgraduate' , element:<DashboardGraduate/> , children:[
+      {index:true, element:<ProfilePageGraduate/>},
+      {path:'profilepagegraduate' , element:<ProfilePageGraduate/>},
+      {path:'roadmappagegraduate' , element:<RoadmapPageGraduate/>},
+      {path:'assessmentspagegraduate' , element:<AssessmentsPageGraduate/>},
+      {path:'scorepagegraduate' , element:<ScorePageGraduate/>},
+      {path:'jobofferpagegraduate' , element:<JobofferPageGraduate/>},
+      {path:'notificationspagegraduate' , element:<NotificationPageGraduate/>},
+      
     ]
   }
 ]);
