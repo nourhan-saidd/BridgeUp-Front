@@ -1,11 +1,15 @@
+import { AppSidebar } from "@/Components/ui/app-sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/Components/ui/sidebar";
 import { Outlet } from "react-router-dom";
-import Sidebar from "../../Components/Sidebar/Sidebar";
 
 export default function DashboardAdmin() {
   return (
-    <>
-    <Sidebar/>
-    <Outlet/>
-    </>
-  )
+    <SidebarProvider>
+      <AppSidebar />
+      <main>
+        <SidebarTrigger />
+        <Outlet />
+      </main>
+    </SidebarProvider>
+  );
 }
