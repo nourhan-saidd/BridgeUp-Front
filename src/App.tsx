@@ -29,7 +29,8 @@ import CompanyProfile from "./Layouts/DashboardCompany/CompanyProfile/CompanyPro
 import Notifications from "./Layouts/DashboardCompany/Notifications/Notifications";
 import SendRequests from "./Layouts/DashboardCompany/SendRequests/SendRequests";
 import ShortListed from "./Layouts/DashboardCompany/ShortListed/ShortListed";
-
+import { Toaster } from 'sonner';
+import AuthContextProvider from "./Context/AuthContext/AuthContextProvider";
 
 const router = createBrowserRouter([
   {
@@ -81,7 +82,11 @@ const router = createBrowserRouter([
 function App() {
   return (
     <>
+
+<AuthContextProvider>
+               <Toaster position="bottom-right" richColors/>
         <RouterProvider router={router} />
+</AuthContextProvider>
     </>
   );
 }

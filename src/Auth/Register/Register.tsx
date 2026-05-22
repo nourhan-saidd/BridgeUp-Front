@@ -1,7 +1,18 @@
-import React from 'react'
-import { Link, Links } from 'react-router-dom'
-
+import { Link } from 'react-router-dom';
+import axiosinstance from '@/Context/BaseUrl/AxiosInstance';
 export default function Register() {
+
+async function setRole(role:string){
+try{
+  const resRole= await axiosinstance.post("api/v1/auth/select-role" , 
+  {role}
+)
+console.log(resRole);
+}catch(error){
+  console.log(error);
+}
+}
+
   return (
     <>
       <div className="min-h-screen flex flex-col bg-[#f5f3ff]">
@@ -29,7 +40,8 @@ export default function Register() {
           <div className="flex gap-10 flex-wrap justify-center">
 
             {/* Graduate Card */}
-       <Link to="/registergraduate">
+ <button onClick={()=> setRole('graduate')}>
+        <Link to="/registergraduate">
             <div className="w-[350px] bg-white rounded-[35px] p-10 shadow-lg border-2 border-[#b8a9ff] 
             hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer text-center">
 
@@ -47,9 +59,11 @@ export default function Register() {
             </div>
        
        </Link>
+ </button>
 
             {/* Company Card */}
-        <Link to="/registerCompany">
+      <button onClick={()=> setRole('company')}>
+          <Link to="/registerCompany">
         
             <div className="w-[350px] bg-white rounded-[35px] p-10 shadow-lg border-2 border-[#b8a9ff] 
             hover:scale-105 hover:shadow-2xl transition-all duration-300 cursor-pointer text-center">
@@ -68,6 +82,7 @@ export default function Register() {
             </div>
 
         </Link>
+      </button>
           </div>
 
           {/* Footer */}

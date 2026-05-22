@@ -1,6 +1,81 @@
-import { Link, Links } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import loginImg from '../../../public/login.gif'
+import { useForm } from 'react-hook-form'
+import * as zod from 'zod';
+import axiosinstance from '@/Context/BaseUrl/AxiosInstance';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useContext, useState } from 'react';
+import { authContext } from '@/Context/AuthContext/AuthContextProvider';
+import { toast } from 'sonner';
+import { BeatLoader } from 'react-spinners';
+
 export default function Login() {
+
+const [loader , setLoader]=useState(false)
+
+const schemaLogin=zod.object({
+  email:zod.string().nonempty('this field is required').regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ ,"email must include @"),
+  password:zod.string().nonempty('this field is required')
+  // password:zod.string().nonempty('this field is required').regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+  //        "password must contain uppercase, lowercase, number, special character and be at least 8 characters",
+  //     )
+})
+
+ const{register,handleSubmit,formState}= useForm({
+  mode:"onBlur",
+  defaultValues:{
+    email:'',
+    password:''
+  },
+resolver:zodResolver(schemaLogin)
+ })
+
+ const {getUpdateToken,GetSetRole}=useContext(authContext)
+const navigate=useNavigate()
+
+
+ async function onSubmit(data:any){
+  setLoader(true)
+  try{
+    const resLogin = await axiosinstance.post('api/v1/auth/login', data );
+  console.log(resLogin.data);
+
+  const token = resLogin.data.token;
+  localStorage.setItem('token', token)
+  getUpdateToken( token)
+
+  const role= resLogin.data.user.role
+  localStorage.setItem('role',role)
+  GetSetRole(role)
+
+toast.success('Login successfully 🎉')
+
+setTimeout(() => {
+
+if(role === 'Graduate'){
+  navigate('/dashboardGraduate')
+}
+
+else if(role === 'Company'){
+  navigate('/dashboardCompany')
+}
+
+else if(role === 'Admin'){
+  navigate('/dashboardadmin')
+}
+
+},3000)
+
+
+  }catch(error:any){
+    console.log(error.response?.data)
+toast.error( error.response?.data?.message)
+  }finally{
+    setLoader(false)
+  }
+
+}
+ 
   return (
     <>
 <div className="min-h-screen bg-[#f5f3ff] flex items-center justify-center p-6 overflow-hidden">
@@ -33,11 +108,6 @@ export default function Login() {
         </p>
       </div>
     </div>
-
-
-
-
-
 
 
 
@@ -76,7 +146,7 @@ export default function Login() {
 
 
         {/* Form */}
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
 
           {/* Email */}
           <div>
@@ -85,10 +155,16 @@ export default function Login() {
             </label>
 
             <input
+            {...register("email")}
               type="email"
               placeholder="your@email.com"
               className="w-full h-14 px-5 rounded-2xl border border-[#ddd6fe] bg-white/80 outline-none focus:border-[#5b4ce2] focus:ring-4 focus:ring-[#c4b5fd] transition-all"
             />
+            {
+            formState.errors.email && formState.touchedFields.email && (     
+              <p className="bg-red-500 text-white rounded-xl mt-2 p-2 text-center">{formState.errors?.email?.message}</p>) 
+              }
+       
           </div>
 
           {/* Password */}
@@ -104,18 +180,27 @@ export default function Login() {
             </div>
 
             <input
+            {...register("password")}
               type="password"
               placeholder="••••••••"
               className="w-full h-14 px-5 rounded-2xl border border-[#ddd6fe] bg-white/80 outline-none focus:border-[#5b4ce2] focus:ring-4 focus:ring-[#c4b5fd] transition-all"
             />
+
+
+ {
+            formState.errors.password && formState.touchedFields.password && (     
+              <p className="bg-red-500 text-white rounded-xl mt-2 p-2 text-center">{formState.errors?.password?.message}</p>) 
+              }
+
           </div>
 
 
           {/* Button */}
           <button
+          type='submit'
             className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#7b74e6] to-[#7b74e6] text-white font-bold text-lg shadow-lg hover:scale-[1.02] hover:shadow-2xl transition-all duration-300"
           >
-            Sign In
+         {loader ? <BeatLoader/> :    'Sign In'}
           </button>
 
  </form>
