@@ -82,7 +82,6 @@ const router = createBrowserRouter([
 function App() {
   return (
     <>
-
 <AuthContextProvider>
                <Toaster position="bottom-right" richColors/>
         <RouterProvider router={router} />
