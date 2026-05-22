@@ -1,7 +1,11 @@
-import React from 'react'
 import { Link } from 'react-router-dom'
 
 export default function ResetPassword() {
+
+
+
+
+
   return (
     <>
           <div className="min-h-screen bg-[#f5f3ff] flex items-center justify-center p-6 overflow-hidden font-sans">

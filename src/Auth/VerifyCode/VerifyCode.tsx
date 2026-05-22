@@ -1,7 +1,28 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import axiosinstance from '@/Context/BaseUrl/AxiosInstance';
+import  { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner';
 
 export default function VerifyCode() {
+  const[code , setCode]=useState(["","","","","",""]);
+
+const navigate=useNavigate()
+
+async function verifyPassword(){
+  const fullcode=code.join("");
+    try{
+      const verifyRes=await axiosinstance.post('api/v1/auth/verify-reset-code' , 
+        {resetCode:fullcode}
+      )
+      console.log(verifyRes.data)
+      toast.success('verify code successfully 🎉')
+      navigate('/resetpassword')
+    }catch(error:any){
+      console.log(error)
+      toast.error(error.response?.data?.message)
+    }
+}
+   
   return (
     <>
       <div className="min-h-screen bg-[#f5f3ff] flex items-center justify-center p-6 overflow-hidden font-sans">
@@ -22,7 +43,7 @@ export default function VerifyCode() {
             Verify Code
           </h2>
           <p className="text-gray-500 mt-3 text-lg">
-            We've sent a 6-digit code to <span className="font-semibold text-[#1e1b4b]">nourhanzz115@gmail.com</span>
+            We've sent a 6-digit code to <span className="font-semibold text-[#1e1b4b]">Your Email</span>
           </p>
         </div>
 
@@ -38,6 +59,13 @@ export default function VerifyCode() {
             <div className="grid grid-cols-6 gap-3">
               {[...Array(6)].map((_, i) => (
                 <input
+                value={code[i]}
+                onChange={(e)=>{
+                const value=e.target.value;
+                const newcode=[...code];
+              newcode[i] =value;
+              setCode(newcode);
+                }}
                   key={i}
                   type="text"
                   maxLength="1"
@@ -57,10 +85,11 @@ export default function VerifyCode() {
 
           {/* Action Button */}
           <button
-            type="button"
+            type="submit"
+            onClick={verifyPassword}
             className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#7b74e6] to-[#7b74e6] text-white font-bold text-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] hover:shadow-2xl transition-all duration-300"
           >
-          <Link to="/resetpassword">Verify Code</Link>
+        Verify Code
           </button>
           
         </div>
