@@ -14,10 +14,6 @@ import VerifyCode from "./Auth/VerifyCode/VerifyCode";
 import ResetPassword from "./Auth/ResetPassword/ResetPassword";
 import SuccessResetPassword from "./Auth/SuccessResetPassword/SuccessResetPassword";
 import DashboardAdmin from "./Layouts/DashboardAdmin/DashboardAdmin";
-import AssessmentsAdmin from "./Pages/AssessmentsAdmin/AssessmentsAdmin";
-import CompaniesAdmin from "./Pages/CompaniesAdmin/CompaniesAdmin";
-import GraduatesAdmin from "./Pages/GraduatesAdmin/GraduatesAdmin";
-import OverViewAdmin from "./Pages/OverViewAdmin/OverViewAdmin";
 import ReportsAdmin from "./Layouts/DashboardAdmin/ReportsAdmin/ReportsAdmin";
 import RoadmapAdmin from "./Layouts/DashboardAdmin/RoadmapAdmin/RoadmapAdmin";
 import StarCompanyAdmin from "./Layouts/DashboardAdmin/StarCompanyAdmin/StarCompanyAdmin";
@@ -39,6 +35,10 @@ import NotificationPageGraduate from "./Layouts/DashboardGraduate/NotificationPa
 import { Toaster } from 'sonner';
 import AuthContextProvider from "./Context/AuthContext/AuthContextProvider";
 import ProtectRoutes from "./Auth/ProtectRoutes/ProtectRoutes";
+import CompaniesAdmin from "./Layouts/DashboardAdmin/CompaniesAdmin/CompaniesAdmin";
+import AssessmentsAdmin from "./Layouts/DashboardAdmin/AssessmentsAmin/AssessmentsAdmin";
+import GraduatesAdmin from "./Layouts/DashboardAdmin/GraduatesAdmin/GraduatesAdmin";
+import OverViewAdmin from "./Layouts/DashboardAdmin/OverViewAdmin/OverViewAdmin";
 
 
 const router = createBrowserRouter([
@@ -66,10 +66,10 @@ const router = createBrowserRouter([
     element:  <ProtectRoutes allowedRoles={["Admin"]}> <DashboardAdmin /> </ProtectRoutes>,
     children: [
       { index:true, element: <OverViewAdmin /> },
-      { path:"overview", element: <OverViewAdmin /> },
-      { path: "assessments", element: <AssessmentsAdmin /> },
-      { path: "companies", element: <CompaniesAdmin /> },
-      { path: "graduates", element: <GraduatesAdmin /> },
+      { path:"overview", element: <OverViewAdmin/> },
+      { path: "assessments", element: <AssessmentsAdmin/> },
+      { path: "companies", element: <CompaniesAdmin/> },
+      { path: "graduates", element: <GraduatesAdmin/> },
       { path: "reports", element: <ReportsAdmin /> },
       { path: "roadmap", element: <RoadmapAdmin /> },
       { path: "starcompanies", element: <StarCompanyAdmin /> },
