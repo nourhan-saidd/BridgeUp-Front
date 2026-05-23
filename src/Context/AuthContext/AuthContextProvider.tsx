@@ -1,4 +1,5 @@
 import { createContext, useState } from "react"
+import { useNavigate } from "react-router-dom";
 export const authContext =  createContext<any>(null);
 export default function AuthContextProvider({children} : any) {
 
@@ -10,10 +11,6 @@ function getUpdateToken(token:string){
     setToken(token)
 }
 
-//remove value of token from local storage
-function getRemoveToken(){
-    setToken(null)
-}
 
 
 //set role to route in dashboard
@@ -22,9 +19,19 @@ function GetSetRole(role:any){
 }
 
 
+//remove value of token from local storage
+function getRemoveLogin(){
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    setToken(null)
+    setRole(null)
+
+}
+
+
   return (
     <>
-    <authContext.Provider value={{token,role,getUpdateToken,getRemoveToken,GetSetRole}}>
+    <authContext.Provider value={{token,role,getUpdateToken,getRemoveLogin,GetSetRole}}>
 {children}
     </authContext.Provider>
       

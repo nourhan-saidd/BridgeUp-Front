@@ -18,7 +18,9 @@ import {
   SidebarHeader,
 } from "./sidebar";
 
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { authContext } from "@/Context/AuthContext/AuthContextProvider";
 
 type LinkItem = {
   title: string;
@@ -43,7 +45,21 @@ const getLinkStyle = (isActive: boolean, section: string) => {
   return "text-gray-700 hover:bg-[#ECE9FF] hover:text-[#5B4BDB]";
 };
 
+ 
+
+
+
 export function AppSidebar({ linksAdmin, sections }: AppSidebarProps) {
+
+  const { getRemoveLogin } = useContext(authContext);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    getRemoveLogin();
+    navigate("/login");
+  };
+ 
+
   return (
     <Sidebar className="border-r bg-white">
       {/* HEADER */}
@@ -93,8 +109,8 @@ export function AppSidebar({ linksAdmin, sections }: AppSidebarProps) {
 
       {/* FOOTER */}
       <SidebarFooter className="border-t p-4">
-        <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-gray-700 hover:bg-[#ECE9FF] hover:text-[#5B4BDB]">
-          <LogOut size={20} />
+        <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-gray-700 hover:bg-[#ECE9FF] hover:text-[#5B4BDB]">
+          <LogOut size={20}  />
           <span className="font-medium">Logout</span>
         </button>
       </SidebarFooter>
