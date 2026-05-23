@@ -38,6 +38,7 @@ import JobofferPageGraduate from "./Layouts/DashboardGraduate/JobofferPageGradua
 import NotificationPageGraduate from "./Layouts/DashboardGraduate/NotificationPageGraduate/NotificationPageGraduate";
 import { Toaster } from 'sonner';
 import AuthContextProvider from "./Context/AuthContext/AuthContextProvider";
+import ProtectRoutes from "./Auth/ProtectRoutes/ProtectRoutes";
 
 
 const router = createBrowserRouter([
@@ -62,7 +63,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/dashboardadmin",
-    element: <DashboardAdmin />,
+    element:  <ProtectRoutes allowedRoles={["Admin"]}> <DashboardAdmin /> </ProtectRoutes>,
     children: [
       { index:true, element: <OverViewAdmin /> },
       { path:"overview", element: <OverViewAdmin /> },
@@ -78,7 +79,7 @@ const router = createBrowserRouter([
   },
   {
     path:'/dashboardCompany' , 
-     element:<DashboardCompany/> , children:[
+     element:   <ProtectRoutes allowedRoles={["Company"]}> <DashboardCompany/> </ProtectRoutes>, children:[
       {index:true , element:<CompanyProfile/>},
       {path:"companyprofile" , element:<CompanyProfile/>},
       {path:"browsegraduate" , element:<BrowseGraduates/>},
@@ -89,7 +90,7 @@ const router = createBrowserRouter([
   }
   ,
   {
-    path:'dashboardgraduate' , element:<DashboardGraduate/> , children:[
+    path:'dashboardgraduate' , element:  <ProtectRoutes allowedRoles={["Graduate"]}>  <DashboardGraduate/> </ProtectRoutes>, children:[
       {index:true, element:<ProfilePageGraduate/>},
       {path:'profilepagegraduate' , element:<ProfilePageGraduate/>},
       {path:'roadmappagegraduate' , element:<RoadmapPageGraduate/>},
@@ -104,9 +105,11 @@ const router = createBrowserRouter([
 function App() {
   return (
     <>
+
 <AuthContextProvider>
                <Toaster position="bottom-right" richColors/>
         <RouterProvider router={router} />
+
 </AuthContextProvider>
     </>
   );
