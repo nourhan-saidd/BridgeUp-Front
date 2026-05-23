@@ -23,11 +23,13 @@ const navigate=useNavigate();
   })
 
 const[loader , setLoader]=useState(false)
+
 async function onSubmit(data:{email:string}){
   setLoader(true)
 try{
   const resEmail=await axiosinstance.post('api/v1/auth/forgot-password' , data)
   console.log(resEmail.data)
+  localStorage.setItem('emailLocal',data.email) 
   navigate('/verifycode')
   toast.success('Email send successfully 🎉')
 

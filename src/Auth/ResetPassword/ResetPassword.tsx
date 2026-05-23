@@ -1,7 +1,68 @@
-import { Link } from 'react-router-dom'
-
+import { useForm } from 'react-hook-form'
+import { Link, useNavigate } from 'react-router-dom'
+import * as zod from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import axiosinstance from '@/Context/BaseUrl/AxiosInstance'
+import { toast } from 'sonner'
 export default function ResetPassword() {
 
+const navigate=useNavigate()
+const schemaResetPassword=zod.object({
+newPassword:zod.string().nonempty('this field is required').regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+         "password must contain uppercase, lowercase, number, special character and be at least 8 characters",
+      ),
+    confirmPassword:zod.string().nonempty('this field is required').regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+         "password must contain uppercase, lowercase, number, special character and be at least 8 characters",
+      ),
+}).refine((value)=>{return value.newPassword === value.confirmPassword} ,
+{message:'not match' , 
+  path:['confirmPassword']
+}
+)
+
+
+const{register,handleSubmit,formState}=useForm({
+  mode:'onBlur',
+  defaultValues:{
+    newPassword:'',
+    confirmPassword:''
+  },
+  resolver:zodResolver(schemaResetPassword)
+})
+
+
+async function onSubmit(data:any){
+
+ const email = localStorage.getItem('emailLocal');
+
+ console.log(email);
+
+ const values = {
+    email,
+    newPassword: data.newPassword,
+    confirmPassword: data.confirmPassword
+ }
+
+ try{
+
+   const resRessetPass = await axiosinstance.post(
+      'api/v1/auth/reset-password',
+      values
+   )
+
+   console.log(resRessetPass.data)
+
+   toast.success('Reset Password successfully 🎉')
+
+   navigate('/SuccessResetPassword')
+
+ }catch(error:any){
+
+   console.log(error.response)
+
+   toast.error(error.response?.data?.message || 'Something went wrong')
+ }
+}
 
 
 
@@ -32,7 +93,7 @@ export default function ResetPassword() {
 
 
 
-       <form>
+       <form onSubmit={handleSubmit(onSubmit)}>
         {/* Form Static Wrapper */}
         <div className="space-y-6">
           
@@ -42,10 +103,15 @@ export default function ResetPassword() {
               New Password
             </label>
             <input
+            {...register("newPassword")}
               type="password"
               placeholder="Enter new password"
               className="w-full h-14 px-5 rounded-2xl border border-[#ddd6fe] bg-white/80 outline-none focus:border-[#5b4ce2] focus:ring-4 focus:ring-[#c4b5fd] transition-all text-lg"
             />
+            {formState.errors.newPassword && formState.touchedFields.newPassword && ( 
+               <p className="bg-red-500 text-white rounded-xl mt-2 p-2 text-center">{formState.errors?.newPassword?.message}</p>
+               )}
+           
             <span className="block mt-2 text-sm text-[#7b74e6] font-medium">
               Must be at least 8 characters
             </span>
@@ -57,18 +123,22 @@ export default function ResetPassword() {
               Confirm New Password
             </label>
             <input
+            {...register("confirmPassword")}
               type="password"
               placeholder="Confirm new password"
               className="w-full h-14 px-5 rounded-2xl border border-[#ddd6fe] bg-white/80 outline-none focus:border-[#5b4ce2] focus:ring-4 focus:ring-[#c4b5fd] transition-all text-lg"
             />
+            {formState.errors.confirmPassword && formState.touchedFields.confirmPassword && ( 
+               <p className="bg-red-500 text-white rounded-xl mt-2 p-2 text-center">{formState.errors?.confirmPassword?.message}</p>
+               )}
           </div>
 
           {/* Action Button */}
           <button
-            type="button"
+            type="submit"
             className="w-full h-14 mt-4 rounded-2xl bg-gradient-to-r from-[#7b74e6] to-[#7b74e6] text-white font-bold text-xl shadow-lg hover:scale-[1.02] active:scale-[0.98] hover:shadow-2xl transition-all duration-300"
           >
-          <Link to="/successresetpassword">  Reset Password</Link>
+          Reset Password
           </button>
           
         </div>
