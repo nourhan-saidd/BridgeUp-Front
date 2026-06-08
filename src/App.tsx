@@ -109,7 +109,6 @@ function App() {
 <AuthContextProvider>
                <Toaster position="bottom-right" richColors/>
         <RouterProvider router={router} />
-
 </AuthContextProvider>
     </>
   );

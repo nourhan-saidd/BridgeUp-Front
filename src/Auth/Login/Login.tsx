@@ -150,13 +150,14 @@ toast.error( error.response?.data?.message)
 
           {/* Email */}
           <div>
-            <label className="block mb-2 font-semibold text-[#1e1b4b]">
+            <label className="block mb-2 font-semibold text-[#1e1b4b]" htmlFor='emaillogin'>
               Email Address
             </label>
 
             <input
             {...register("email")}
               type="email"
+              id='emaillogin'
               placeholder="your@email.com"
               className="w-full h-14 px-5 rounded-2xl border border-[#ddd6fe] bg-white/80 outline-none focus:border-[#5b4ce2] focus:ring-4 focus:ring-[#c4b5fd] transition-all"
             />

@@ -4,7 +4,6 @@ export default function Contact() {
     <>
 <div>
 
-
     <section className="bg-[#f3f0ff] py-16 px-4">
       <div className="max-w-6xl mx-auto overflow-hidden rounded-3xl shadow-lg bg-[#f7f4ff]">
 
