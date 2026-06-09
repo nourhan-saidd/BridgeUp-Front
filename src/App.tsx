@@ -39,8 +39,9 @@ import CompaniesAdmin from "./Layouts/DashboardAdmin/CompaniesAdmin/CompaniesAdm
 import AssessmentsAdmin from "./Layouts/DashboardAdmin/AssessmentsAmin/AssessmentsAdmin";
 import GraduatesAdmin from "./Layouts/DashboardAdmin/GraduatesAdmin/GraduatesAdmin";
 import OverViewAdmin from "./Layouts/DashboardAdmin/OverViewAdmin/OverViewAdmin";
-
-
+import TotalSupportMessage from "./Layouts/DashboardAdmin/TotalSupportMessage/TotalSupportMessage";
+import TodaySupportMessage from "./Layouts/DashboardAdmin/TodaySupportMessage/TodaySupportMessage";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const router = createBrowserRouter([
   {
     path: "/",
@@ -74,7 +75,11 @@ const router = createBrowserRouter([
       { path: "roadmap", element: <RoadmapAdmin /> },
       { path: "starcompanies", element: <StarCompanyAdmin /> },
       { path: "stargraduates", element: <StarGraduatesAdmin /> },
-      { path: "supportmessage", element: <SupportMessageAdmin /> },
+      { path: "supportmessage", element: <SupportMessageAdmin /> , children:[
+        {path:'total' , element: <TotalSupportMessage/> },
+        {path:'today' , element:<TodaySupportMessage/>}
+      ] },
+    
     ],
   },
   {
@@ -102,14 +107,21 @@ const router = createBrowserRouter([
     ]
   }
 ]);
+
+const queryclient=new QueryClient();
+
+
 function App() {
   return (
     <>
-
+<QueryClientProvider client={queryclient}>
 <AuthContextProvider>
                <Toaster position="bottom-right" richColors/>
         <RouterProvider router={router} />
 </AuthContextProvider>
+
+</QueryClientProvider>
+
     </>
   );
 }
