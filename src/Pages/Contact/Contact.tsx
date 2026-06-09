@@ -1,5 +1,67 @@
+import { useForm } from 'react-hook-form'
 import contactImg from '../../../public/contact.gif'
+import axiosinstance from '@/Context/BaseUrl/AxiosInstance'
+import * as zod from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useState } from 'react'
+import { BeatLoader } from 'react-spinners'
+import { toast } from 'sonner'
 export default function Contact() {
+
+
+const [isLoader,setIsLoader]=useState(false)
+
+
+const schemaContact= zod.object({
+  firstName:zod.string().nonempty('thid field is required').min(3,'letters must be more than 3').max(20,'letters must be less than 20'),
+  lastName:zod.string().nonempty('this field is required').min(3,'letters must be more than 3').max(20,'letters must be less than 20'),
+  email:zod.string().nonempty('this field is required').regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/ , 'this is not valid email'),
+  message:zod.string().nonempty('this field is required').min(10,'letters must be more than 10').max(500,'lerrters must be less than 500')
+})
+
+
+
+const {register,handleSubmit,formState , reset}=useForm({
+  defaultValues:{
+    firstName:"",
+    lastName:"",
+    email:"",
+    message:""
+  },
+  mode:'onBlur',
+  resolver:zodResolver(schemaContact)
+})
+
+
+
+async function onSubmit(data:unknown){
+ setIsLoader(true)
+  try{
+        const formData=await axiosinstance.post(`api/v1/contactUs` , data)
+        toast.success(formData?.data?.message)
+        setTimeout(() => {
+          reset()
+        }, 1000);
+        
+  }catch(error:unknown){
+    toast.error(error.response?.data?.message || "Something went wrong")
+  }finally{
+     setIsLoader(false)
+  }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
   return (
     <>
 <div>
@@ -50,7 +112,7 @@ export default function Contact() {
           </div>
 
           {/* Form */}
-          <form className="space-y-8">
+          <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
             <h3 className="text-3xl font-bold text-[#2d2555]">
               Contact Us
             </h3>
@@ -58,58 +120,90 @@ export default function Contact() {
             {/* Name Inputs */}
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="text-sm text-[#5f5a7a]">
+                <label className="text-sm text-[#5f5a7a]" htmlFor='firstNameContact'>
                   First Name
                 </label>
 
                 <input
+                {...register('firstName')}
+                id='firstNameContact'
                   type="text"
                   className="w-full bg-transparent border-b border-[#7d73a8] outline-none py-2 mt-2"
                 />
+                  
+             {
+            formState.errors.firstName && formState.touchedFields.firstName && (     
+              <p className="bg-red-500 text-white rounded-xl mt-2 p-2 text-center">{formState.errors?.firstName?.message}</p>) 
+              }
+
+              
+            
+
+
               </div>
 
               <div>
-                <label className="text-sm text-[#5f5a7a]">
+                <label className="text-sm text-[#5f5a7a]" htmlFor='lastNameContact'>
                   Last Name
                 </label>
 
                 <input
+                {...register('lastName')}
+                id='lastNameContact'
                   type="text"
                   className="w-full bg-transparent border-b border-[#7d73a8] outline-none py-2 mt-2"
                 />
+ {
+            formState.errors.lastName && formState.touchedFields.lastName && (     
+              <p className="bg-red-500 text-white rounded-xl mt-2 p-2 text-center">{formState.errors?.lastName?.message}</p>) 
+              }
               </div>
             </div>
 
             {/* Email */}
             <div>
-              <label className="text-sm text-[#5f5a7a]">
+              <label className="text-sm text-[#5f5a7a]" htmlFor='emailContact'>
                 Email
               </label>
 
               <input
+              {...register("email")}
+                id='emailContact'
                 type="email"
                 className="w-full bg-transparent border-b border-[#7d73a8] outline-none py-2 mt-2"
               />
+   {
+            formState.errors.email && formState.touchedFields.email && (     
+              <p className="bg-red-500 text-white rounded-xl mt-2 p-2 text-center">{formState.errors?.email?.message}</p>) 
+              }
+
             </div>
 
             {/* Message */}
             <div>
-              <label className="text-sm text-[#5f5a7a]">
+              <label className="text-sm text-[#5f5a7a]" htmlFor='messageContact'>
                 Your Message
               </label>
 
               <textarea
+              {...register("message")}
+              id='messageContact'
                 rows="4"
                 className="w-full bg-transparent border-b border-[#7d73a8] outline-none py-2 mt-2 resize-none"
               ></textarea>
+               {
+            formState.errors.message && formState.touchedFields.message && (     
+              <p className="bg-red-500 text-white rounded-xl mt-2 p-2 text-center">{formState.errors?.message?.message}</p>) 
+              }
             </div>
 
             {/* Button */}
             <button
+            disabled={isLoader}
               type="submit"
               className="bg-[#5b4b8a] hover:bg-[#493a74] transition-all duration-300 text-white px-10 py-3 rounded-full font-medium shadow-md"
             >
-              Submit
+              {isLoader ? <BeatLoader /> : 'submit'}
             </button>
           </form>
         </div>
