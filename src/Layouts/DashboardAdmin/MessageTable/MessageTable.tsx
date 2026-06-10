@@ -24,6 +24,8 @@ export default function MessageTable({ dataContact }: any) {
     //  refresh data after delete
  queryClient.invalidateQueries({ queryKey: ["all messages"] });
 queryClient.invalidateQueries({ queryKey: ["today messages"] });
+  queryClient.invalidateQueries({queryKey: ["count messages"],
+  });
 
   }
 
