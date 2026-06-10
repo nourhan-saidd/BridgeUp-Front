@@ -76,6 +76,7 @@ const router = createBrowserRouter([
       { path: "starcompanies", element: <StarCompanyAdmin /> },
       { path: "stargraduates", element: <StarGraduatesAdmin /> },
       { path: "supportmessage", element: <SupportMessageAdmin /> , children:[
+        {index:true , element: <TotalSupportMessage/> },
         {path:'total' , element: <TotalSupportMessage/> },
         {path:'today' , element:<TodaySupportMessage/>}
       ] },
@@ -114,12 +115,12 @@ const queryclient=new QueryClient();
 function App() {
   return (
     <>
+    
 <QueryClientProvider client={queryclient}>
 <AuthContextProvider>
                <Toaster position="bottom-right" richColors/>
         <RouterProvider router={router} />
 </AuthContextProvider>
-
 </QueryClientProvider>
 
     </>
