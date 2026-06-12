@@ -85,7 +85,7 @@ const router = createBrowserRouter([
   },
   {
     path:'/dashboardCompany' , 
-     element:   <ProtectRoutes allowedRoles={["Company"]}> <DashboardCompany/> </ProtectRoutes>, children:[
+     element:   <ProtectRoutes allowedRoles={["company"]}> <DashboardCompany/> </ProtectRoutes>, children:[
       {index:true , element:<CompanyProfile/>},
       {path:"companyprofile" , element:<CompanyProfile/>},
       {path:"browsegraduate" , element:<BrowseGraduates/>},
