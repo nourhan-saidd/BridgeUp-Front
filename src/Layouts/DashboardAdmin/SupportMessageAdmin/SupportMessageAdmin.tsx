@@ -10,7 +10,7 @@ export default function SupportMessageAdmin() {
 const {token}=useContext(authContext)
 
 async function getCountMessages(){
-  const res =await axiosinstance.get(`api/v1/contactUs/stats`,
+  const res =await axiosinstance.get(`api/v1/contact-us/stats`,
     {headers:{Authorization:`Bearer ${token}`}}
   )
   return res.data ;

@@ -15,7 +15,7 @@ export default function MessageTable({ dataContact }: any) {
   const {token}=useContext(authContext)
 
   async function deleteOne(id: string) {
-    await axiosinstance.delete(`api/v1/contactUs/${id}`,{
+    await axiosinstance.delete(`api/v1/contact-us/${id}`,{
     headers: {
       Authorization: `Bearer ${token}`,
     },

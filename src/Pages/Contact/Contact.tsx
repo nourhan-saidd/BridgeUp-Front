@@ -37,7 +37,7 @@ const {register,handleSubmit,formState , reset}=useForm({
 async function onSubmit(data:unknown){
  setIsLoader(true)
   try{
-        const formData=await axiosinstance.post(`api/v1/contactUs` , data)
+        const formData=await axiosinstance.post(`api/v1/contact-us` , data)
         toast.success(formData?.data?.message)
         setTimeout(() => {
           reset()

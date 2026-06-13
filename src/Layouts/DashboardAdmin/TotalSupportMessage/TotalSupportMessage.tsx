@@ -11,7 +11,7 @@ const queryclient=useQueryClient();
 const { token } = useContext(authContext);
 
 async function GetAllMessages() {
-  const res = await axiosinstance.get("api/v1/contactUs", {
+  const res = await axiosinstance.get("api/v1/contact-us/all", {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -35,7 +35,7 @@ if(isError) return <h1>error occured ... </h1>
 
 
 async function deleteAllMessages(){
-await axiosinstance.delete(`api/v1/contactUs`,
+await axiosinstance.delete(`api/v1/contact-us/all`,
     {
         headers:{Authorization:`Bearer ${token}`}
     }

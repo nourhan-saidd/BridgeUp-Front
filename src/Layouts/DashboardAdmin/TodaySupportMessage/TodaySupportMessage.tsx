@@ -10,7 +10,7 @@ const{token}= useContext(authContext)
 const queryclient =useQueryClient()
 
 async function getTodayMessages(){
-    const res =await axiosinstance.get(`api/v1/contactUs/today` , {
+    const res =await axiosinstance.get(`api/v1/contact-us/today` , {
         headers : {  Authorization: `Bearer ${token}`}
        },
     )
@@ -32,7 +32,7 @@ if(isLoading) return <BeatLoader />
 if(isError) return <h1>error occured ... </h1>
 
 async function deleteAllMessages(){
-await axiosinstance.delete(`api/v1/contactUs`,
+await axiosinstance.delete(`api/v1/contact-us/all`,
     {
         headers:{Authorization:`Bearer ${token}`}
     }

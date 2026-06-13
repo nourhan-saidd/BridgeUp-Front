@@ -73,12 +73,21 @@ const sections = ["OVERVIEW", "MANAGEMENT", "ANALYTICS"];
 export default function DashboardAdmin() {
   return (
     <SidebarProvider>
-      <AppSidebar linksAdmin={links} sections={sections} />
+      <div className="flex w-full min-h-screen overflow-x-hidden">
 
-      <main>
-        <SidebarTrigger />
-        <Outlet />
-      </main>
+        {/* Sidebar */}
+        <AppSidebar linksAdmin={links} sections={sections} />
+
+        {/* Main Content */}
+        <main className="flex-1 w-full min-w-0">
+          <SidebarTrigger />
+
+          <div className="p-4">
+            <Outlet />
+          </div>
+        </main>
+
+      </div>
     </SidebarProvider>
   );
 }

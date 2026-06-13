@@ -42,6 +42,8 @@ import OverViewAdmin from "./Layouts/DashboardAdmin/OverViewAdmin/OverViewAdmin"
 import TotalSupportMessage from "./Layouts/DashboardAdmin/TotalSupportMessage/TotalSupportMessage";
 import TodaySupportMessage from "./Layouts/DashboardAdmin/TodaySupportMessage/TodaySupportMessage";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import RoadmapDetails from "./Layouts/DashboardAdmin/RoadmapDetails/RoadmapDetails";
+import PhasesDetails from "./Layouts/PhasesDetails/PhasesDetails";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -79,7 +81,14 @@ const router = createBrowserRouter([
         {index:true , element: <TotalSupportMessage/> },
         {path:'total' , element: <TotalSupportMessage/> },
         {path:'today' , element:<TodaySupportMessage/>}
-      ] },
+      ] },{
+        path:'roadmapdetails/:id' , element:<RoadmapDetails/>
+      },{
+        path:'phasesdetails/:id' , element:<PhasesDetails/>
+      }
+      
+      
+      ,
     
     ],
   },
