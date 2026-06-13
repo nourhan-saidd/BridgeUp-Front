@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 
 const API_BASE_URL = "http://localhost:5000/api/v1";
 
+// ── TYPES ──────────────────────────────────────────────────────────────────────
 interface Candidate {
   shortlistId: string;
   graduateId: string;
@@ -16,6 +17,7 @@ interface Candidate {
   university: string;
 }
 
+// ── HELPERS ────────────────────────────────────────────────────────────────────
 const getInitials = (name: string): string => {
   if (!name) return "??";
   return name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -32,10 +34,11 @@ const timeAgo = (dateStr: string): string => {
   return `${weeks} weeks ago`;
 };
 
+// ── MAIN ───────────────────────────────────────────────────────────────────────
 const ShortListed = () => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
 
   useEffect(() => {
     fetchShortlisted();
@@ -64,12 +67,12 @@ const ShortListed = () => {
             const g = item.graduate;
             return {
               shortlistId: item._id,
-              graduateId: g._id,
-              name: g.fullName || "Unknown",
-              initials: getInitials(g.fullName),
-              track: g.track ? `${g.track} Track` : "Unknown Track",
-              addedAgo: item.createdAt ? timeAgo(item.createdAt) : "Recently",
-              university: g.university || "",
+              graduateId:  g._id,
+              name:        g.fullName   || "Unknown",
+              initials:    getInitials(g.fullName),
+              track:       g.track ? `${g.track} Track` : "Unknown Track",
+              addedAgo:    item.createdAt ? timeAgo(item.createdAt) : "Recently",
+              university:  g.university || "",
             };
           });
         setCandidates(mapped);
@@ -128,7 +131,7 @@ const ShortListed = () => {
     <div className="p-6 max-w-5xl mx-auto space-y-4">
       <h1 className="text-2xl font-bold text-[#111033]">Shortlisted Candidates</h1>
 
-      {/* Header */}
+      {/* Header Banner */}
       <Card className="border border-[#e8e4ff] bg-[#f5f3ff] shadow-sm">
         <CardContent className="p-5 flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-[#6c63ff] flex items-center justify-center">
@@ -177,15 +180,17 @@ const ShortListed = () => {
                   </div>
                 </div>
 
-                {/* Remove only */}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleRemove(c.graduateId)}
-                  className="border-red-200 text-red-500 hover:bg-red-50"
-                >
-                  Remove
-                </Button>
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleRemove(c.graduateId)}
+                    className="border-red-200 text-red-500 hover:bg-red-50"
+                  >
+                    Remove
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))

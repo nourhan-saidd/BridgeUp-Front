@@ -1,28 +1,36 @@
-import { useState } from "react";
-import { Search, Star, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useState, useContext, useEffect } from "react";
+import { Search, Star, X } from "lucide-react";
 import { Card, CardContent } from "@/Components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/Components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
+import axiosinstance from "@/Context/BaseUrl/AxiosInstance";
+import { authContext } from "@/Context/AuthContext/AuthContextProvider";
+import { toast } from "sonner";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ── TYPES ──────────────────────────────────────────────────────────────────────
 interface Graduate {
   _id: string;
   fullName: string;
-  track: string;
+  email: string;
+  phone: string;
+  age: number;
   gender: string;
-  graduationYear: string;
-  profilePicture?: string;
-  scores: {
-    iq: number;
-    english: number;
-    technical: number;
-  };
+  university: string;
+  graduationYear: number;
+  track: string;
+  profilePicture: string;
+  iqScore?: number;
+  englishScore?: number;
+  technicalScore?: number;
+  scores?: { iq?: number; english?: number; technical?: number };
+  cv?: string | null;
+  gitHubProfile?: string | null;
+  linkedInProfile?: string | null;
+  portfolioLink?: string | null;
 }
 
-interface FiltersState {
+interface Filters {
   track: string;
   englishScore: string;
   technicalScore: string;
@@ -31,62 +39,52 @@ interface FiltersState {
   graduationYear: string;
 }
 
-// ─── Axios instance ───────────────────────────────────────────────────────────
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1",
-});
+// ── CONSTANTS ──────────────────────────────────────────────────────────────────
+const TRACKS    = ["All Tracks", "Frontend", "Backend", "Fullstack", "UI/UX"];
+const SCORES    = ["Select Score", "60", "70", "80", "90"];
+const GENDERS   = ["All", "Male", "Female"];
+const YEARS     = ["All Years", "2021", "2022", "2023", "2024", "2025", "2026"];
+const PAGE_SIZE = 8;
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// ─── API Calls ────────────────────────────────────────────────────────────────
-const fetchGraduates = async (filters: FiltersState, page: number) => {
-  const { data } = await api.get("/company/graduates", {
-    params: {
-      page,
-      limit: 8,
-      ...(filters.track && filters.track !== "all" && { track: filters.track }),
-      ...(filters.englishScore && { minEnglish: filters.englishScore }),
-      ...(filters.technicalScore && { minTechnical: filters.technicalScore }),
-      ...(filters.iqScore && { minIq: filters.iqScore }),
-      ...(filters.gender && filters.gender !== "All" && { gender: filters.gender }),
-      ...(filters.graduationYear && filters.graduationYear !== "all" && { graduationYear: filters.graduationYear }),
-    },
-  });
-  return data;
+const EMPTY_FILTERS: Filters = {
+  track: "", englishScore: "", technicalScore: "",
+  iqScore: "", gender: "", graduationYear: "",
 };
 
-const fetchShortlistedGraduates = async () => {
-  const { data } = await api.get("/company/shortlisted");
-  return data;
-};
+// ── HELPERS ────────────────────────────────────────────────────────────────────
+function getInitials(name: string): string {
+  if (!name?.trim()) return "?";
+  return name.trim().split(" ").filter(Boolean).slice(0, 2)
+    .map((w) => w[0].toUpperCase()).join("");
+}
 
-// ✅ FIXED: POST not PUT
-const addToShortlist = async (graduateId: string) => {
-  const { data } = await api.post(`/company/shortlist/${graduateId}`);
-  return data;
-};
+function meetsScore(value: number | undefined, min: string): boolean {
+  if (!min || min === "Select Score") return true;
+  if (value === undefined || value === null) return false;
+  return value >= Number(min);
+}
 
-const removeFromShortlist = async (graduateId: string) => {
-  const { data } = await api.delete(`/company/shortlist/${graduateId}`);
-  return data;
-};
+function passesFilters(grad: Graduate, f: Filters): boolean {
+  if (f.track && f.track !== "All Tracks")
+    if (!grad.track?.toLowerCase().includes(f.track.toLowerCase())) return false;
+  if (f.gender && f.gender !== "All")
+    if (grad.gender?.toLowerCase() !== f.gender.toLowerCase()) return false;
+  if (f.graduationYear && f.graduationYear !== "All Years")
+    if (String(grad.graduationYear) !== f.graduationYear) return false;
+  const eng  = grad.englishScore   ?? grad.scores?.english;
+  const tech = grad.technicalScore ?? grad.scores?.technical;
+  const iq   = grad.iqScore        ?? grad.scores?.iq;
+  if (!meetsScore(eng,  f.englishScore))   return false;
+  if (!meetsScore(tech, f.technicalScore)) return false;
+  if (!meetsScore(iq,   f.iqScore))        return false;
+  return true;
+}
 
-// ✅ Contact offer API
-const sendOffer = async ({ graduateId, position, message }: { graduateId: string; position: string; message: string }) => {
-  const { data } = await api.post("/offers", { graduate: graduateId, position, message });
-  return data;
-};
-
-// ─── ScoreBar ─────────────────────────────────────────────────────────────────
+// ── SCORE BAR ──────────────────────────────────────────────────────────────────
 const ScoreBar = ({ label, value }: { label: string; value: number }) => (
   <div className="mb-2">
     <div className="flex justify-between text-xs text-[#7b74e6] mb-1">
-      <span>{label}</span>
-      <span>{value}</span>
+      <span>{label}</span><span>{value}</span>
     </div>
     <div className="h-1.5 bg-[#f3f0ff] rounded-full">
       <div className="h-1.5 bg-[#6c63ff] rounded-full transition-all" style={{ width: `${value}%` }} />
@@ -94,30 +92,34 @@ const ScoreBar = ({ label, value }: { label: string; value: number }) => (
   </div>
 );
 
-const getInitials = (name: string) =>
-  name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-
-// ─── Contact Modal ────────────────────────────────────────────────────────────
+// ── CONTACT MODAL ──────────────────────────────────────────────────────────────
 const ContactModal = ({
   graduate,
+  token,
   onClose,
 }: {
   graduate: Graduate;
+  token: string;
   onClose: () => void;
 }) => {
   const [position, setPosition] = useState("");
-  const [message, setMessage] = useState("We are impressed with your profile and would like to offer you this position.");
+  const [message, setMessage]   = useState(
+    "We are impressed with your profile and would like to offer you this position."
+  );
   const [sent, setSent] = useState(false);
 
   const offerMutation = useMutation({
-    mutationFn: sendOffer,
+    mutationFn: () =>
+      axiosinstance
+        .post(
+          "api/v1/offers",
+          { graduate: graduate._id, position, message },
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        .then((r) => r.data),
     onSuccess: () => setSent(true),
+    onError:   () => toast.error("Failed to send offer. Try again."),
   });
-
-  const handleSend = () => {
-    if (!position.trim()) return alert("Please enter a position.");
-    offerMutation.mutate({ graduateId: graduate._id, position, message });
-  };
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -140,13 +142,13 @@ const ContactModal = ({
         ) : (
           <>
             <h3 className="text-lg font-bold text-[#111033] mb-1">Contact Graduate</h3>
-            <p className="text-sm text-[#7b74e6] mb-4">Send an offer to <span className="font-semibold">{graduate.fullName}</span></p>
-
+            <p className="text-sm text-[#7b74e6] mb-4">
+              Send an offer to <span className="font-semibold">{graduate.fullName}</span>
+            </p>
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-[#7b74e6] block mb-1">POSITION</label>
                 <input
-                  type="text"
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
                   placeholder="e.g. Frontend Developer"
@@ -163,27 +165,22 @@ const ContactModal = ({
                 />
               </div>
             </div>
-
             <div className="flex gap-2 mt-5">
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="flex-1 border-[#b8a9ff] text-[#6c63ff] hover:bg-[#f3f0ff]"
-              >
+              <Button variant="outline" onClick={onClose}
+                className="flex-1 border-[#b8a9ff] text-[#6c63ff] hover:bg-[#f3f0ff]">
                 Cancel
               </Button>
               <Button
-                onClick={handleSend}
+                onClick={() => {
+                  if (!position.trim()) return toast.error("Please enter a position.");
+                  offerMutation.mutate();
+                }}
                 disabled={offerMutation.isPending}
                 className="flex-1 bg-[#6c63ff] hover:bg-[#4d44db] text-white"
               >
                 {offerMutation.isPending ? "Sending..." : "Send Offer"}
               </Button>
             </div>
-
-            {offerMutation.isError && (
-              <p className="text-red-500 text-xs mt-2 text-center">Failed to send offer. Try again.</p>
-            )}
           </>
         )}
       </div>
@@ -191,292 +188,289 @@ const ContactModal = ({
   );
 };
 
-// ─── Main Component ───────────────────────────────────────────────────────────
-const BrowseGraduates = () => {
-  const queryClient = useQueryClient();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [contactGraduate, setContactGraduate] = useState<Graduate | null>(null);
-
-  const [appliedFilters, setAppliedFilters] = useState<FiltersState>({
-    track: "all", englishScore: "", technicalScore: "",
-    iqScore: "", gender: "All", graduationYear: "all",
-  });
-  const [draftFilters, setDraftFilters] = useState<FiltersState>({ ...appliedFilters });
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["graduates", appliedFilters, currentPage],
-    queryFn: () => fetchGraduates(appliedFilters, currentPage),
-  });
-
-  const { data: shortlistData } = useQuery({
-    queryKey: ["shortlistedGraduates"],
-    queryFn: fetchShortlistedGraduates,
-  });
-
-  const graduates: Graduate[] = data?.data?.graduates ?? [];
-  const totalPages: number = data?.totalPages ?? 1;
-
-  // ✅ FIXED: use item.graduate._id not item._id
-  const shortlistedIds: string[] = shortlistData?.data?.shortlists
-    ?.filter((item: any) => item.graduate !== null && item.graduate !== undefined)
-    ?.map((item: any) => item.graduate._id) ?? [];
-
-  const addMutation = useMutation({
-    mutationFn: addToShortlist,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["shortlistedGraduates"] }),
-  });
-
-  const removeMutation = useMutation({
-    mutationFn: removeFromShortlist,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["shortlistedGraduates"] }),
-  });
-
-  const toggleShortlist = (id: string) => {
-    if (shortlistedIds.includes(id)) {
-      removeMutation.mutate(id);
-    } else {
-      addMutation.mutate(id);
-    }
-  };
-
-  const handleSearch = () => {
-    setCurrentPage(1);
-    setAppliedFilters({ ...draftFilters });
-  };
-
-  const handleClear = () => {
-    const empty: FiltersState = {
-      track: "all", englishScore: "", technicalScore: "",
-      iqScore: "", gender: "All", graduationYear: "all",
-    };
-    setDraftFilters(empty);
-    setAppliedFilters(empty);
-    setCurrentPage(1);
-  };
+// ── GRADUATE CARD ──────────────────────────────────────────────────────────────
+const GraduateCard = ({
+  grad,
+  isShortlisted,
+  onToggleShortlist,
+  onContact,
+}: {
+  grad: Graduate;
+  isShortlisted: boolean;
+  onToggleShortlist: (id: string, isShortlisted: boolean) => void;
+  onContact: (g: Graduate) => void;
+}) => {
+  const iq   = grad.iqScore        ?? grad.scores?.iq   ?? 0;
+  const eng  = grad.englishScore   ?? grad.scores?.english   ?? 0;
+  const tech = grad.technicalScore ?? grad.scores?.technical ?? 0;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold text-[#111033]">Browse Graduates</h1>
+    <Card className="border border-[#e8e4ff] shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="p-5 relative">
+        {/* Star */}
+        <button
+          onClick={() => onToggleShortlist(grad._id, isShortlisted)}
+          className="absolute top-4 right-4 text-[#b8a9ff] hover:text-yellow-400 transition-colors"
+          title={isShortlisted ? "Remove from shortlist" : "Add to shortlist"}
+        >
+          <Star className={`w-4 h-4 ${isShortlisted ? "fill-yellow-400 text-yellow-400" : ""}`} />
+        </button>
 
-      {/* Contact Modal */}
-      {contactGraduate && (
-        <ContactModal graduate={contactGraduate} onClose={() => setContactGraduate(null)} />
-      )}
-
-      {/* Filters Card */}
-      <Card className="border border-[#e8e4ff] shadow-sm">
-        <CardContent className="p-5">
-          <div className="grid grid-cols-6 gap-4">
-            <div>
-              <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">TRACK</p>
-              <Select value={draftFilters.track} onValueChange={(v) => setDraftFilters(p => ({ ...p, track: v }))}>
-                <SelectTrigger className="border-[#b8a9ff] focus:ring-[#6c63ff]">
-                  <SelectValue placeholder="All Tracks" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Tracks</SelectItem>
-                  {["Frontend", "Backend", "UI/UX", "Fullstack"].map((t) => (
-                    <SelectItem key={t} value={t}>{t} Track</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">ENGLISH SCORE (MIN)</p>
-              <Select value={draftFilters.englishScore} onValueChange={(v) => setDraftFilters(p => ({ ...p, englishScore: v }))}>
-                <SelectTrigger className="border-[#b8a9ff] focus:ring-[#6c63ff]">
-                  <SelectValue placeholder="Select Score" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["70","75","80","85","90"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">TECHNICAL SCORE (MIN)</p>
-              <Select value={draftFilters.technicalScore} onValueChange={(v) => setDraftFilters(p => ({ ...p, technicalScore: v }))}>
-                <SelectTrigger className="border-[#b8a9ff] focus:ring-[#6c63ff]">
-                  <SelectValue placeholder="Select Score" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["70","75","80","85","90"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">IQ SCORE (MIN)</p>
-              <Select value={draftFilters.iqScore} onValueChange={(v) => setDraftFilters(p => ({ ...p, iqScore: v }))}>
-                <SelectTrigger className="border-[#b8a9ff] focus:ring-[#6c63ff]">
-                  <SelectValue placeholder="Select Score" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["70","75","80","85","90"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">GENDER</p>
-              <Select value={draftFilters.gender} onValueChange={(v) => setDraftFilters(p => ({ ...p, gender: v }))}>
-                <SelectTrigger className="border-[#b8a9ff] focus:ring-[#6c63ff]">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  {["All","Male","Female"].map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">GRADUATION YEAR</p>
-              <Select value={draftFilters.graduationYear} onValueChange={(v) => setDraftFilters(p => ({ ...p, graduationYear: v }))}>
-                <SelectTrigger className="border-[#b8a9ff] focus:ring-[#6c63ff]">
-                  <SelectValue placeholder="All Years" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Years</SelectItem>
-                  {["2024","2023","2022"].map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+        {/* Avatar */}
+        {grad.profilePicture && !grad.profilePicture.includes("default") ? (
+          <img src={grad.profilePicture} alt={grad.fullName}
+            className="w-12 h-12 rounded-full object-cover mb-3" />
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-[#111033] text-white flex items-center justify-center text-sm font-semibold mb-3">
+            {getInitials(grad.fullName)}
           </div>
+        )}
 
-          <div className="flex justify-end items-center gap-3 mt-4">
-            <button onClick={handleClear} className="text-sm text-[#7b74e6] hover:text-[#6c63ff]">
-              Clear Filters
-            </button>
-            <Button onClick={handleSearch} className="bg-[#6c63ff] hover:bg-[#4d44db] text-white gap-2">
-              <Search className="w-4 h-4" /> Search
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <h3 className="font-semibold text-[#111033] text-sm truncate pr-6">{grad.fullName}</h3>
+        <Badge className="bg-[#f3f0ff] text-[#6c63ff] hover:bg-[#f3f0ff] mb-3 mt-1 text-xs">
+          {grad.track} Track
+        </Badge>
+
+        <ScoreBar label="IQ Score"        value={iq} />
+        <ScoreBar label="English Score"   value={eng} />
+        <ScoreBar label="Technical Score" value={tech} />
+
+        <Button
+          variant="outline"
+          onClick={() => onContact(grad)}
+          className="w-full mt-4 border-[#b8a9ff] text-[#6c63ff] hover:bg-[#f3f0ff]"
+        >
+          Contact
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ── MAIN ───────────────────────────────────────────────────────────────────────
+const BrowseGraduates = () => {
+  const queryClient = useQueryClient();
+  const { token }   = useContext(authContext);
+
+  const [filters, setFilters]             = useState<Filters>({ ...EMPTY_FILTERS });
+  const [applied, setApplied]             = useState<Filters>({ ...EMPTY_FILTERS });
+  const [page, setPage]                   = useState(1);
+  const [shortlisted, setShortlisted]     = useState<Set<string>>(new Set());
+  const [contactTarget, setContactTarget] = useState<Graduate | null>(null);
+
+  const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
+
+  // ── FETCH GRADUATES ──
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["graduates"],
+    queryFn:  () =>
+      axiosinstance.get("api/v1/company/graduates", authHeaders).then((r) => r.data),
+    enabled: !!token,
+  });
+
+  // ── FETCH SHORTLISTED ──
+  const { data: shortlistData } = useQuery({
+    queryKey: ["shortlistedGraduates"],
+    queryFn:  () =>
+      axiosinstance.get("api/v1/company/shortlisted", authHeaders).then((r) => r.data),
+    enabled: !!token,
+  });
+
+  // ── SYNC SHORTLISTED IDS ──
+  useEffect(() => {
+    if (!shortlistData) return;
+    const ids: string[] = shortlistData?.data?.shortlists
+      ?.filter((item: any) => item.graduate)
+      ?.map((item: any) => item.graduate._id) ?? [];
+    setShortlisted(new Set(ids));
+  }, [shortlistData]);
+
+  const allGraduates: Graduate[] = data?.data?.graduates ?? [];
+  const filtered   = allGraduates.filter((g) => passesFilters(g, applied));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // ── ADD TO SHORTLIST ──
+  const { mutate: addToShortlist } = useMutation({
+    mutationFn: (graduateId: string) =>
+      axiosinstance.post(`api/v1/company/shortlist/${graduateId}`, {}, authHeaders),
+    onSuccess: (_data, graduateId) => {
+      setShortlisted((prev) => new Set(prev).add(graduateId));
+      queryClient.invalidateQueries({ queryKey: ["shortlistedGraduates"] });
+      toast.success("Added to shortlist!");
+    },
+    onError: () => toast.error("Already shortlisted or an error occurred."),
+  });
+
+  // ── REMOVE FROM SHORTLIST ──
+  const { mutate: removeFromShortlist } = useMutation({
+    mutationFn: (graduateId: string) =>
+      axiosinstance.delete(`api/v1/company/shortlist/${graduateId}`, authHeaders),
+    onSuccess: (_data, graduateId) => {
+      setShortlisted((prev) => {
+        const next = new Set(prev);
+        next.delete(graduateId);
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: ["shortlistedGraduates"] });
+      toast.success("Removed from shortlist!");
+    },
+    onError: () => toast.error("Failed to remove from shortlist."),
+  });
+
+  const handleToggleShortlist = (id: string, isAlreadyShortlisted: boolean) => {
+    if (isAlreadyShortlisted) removeFromShortlist(id);
+    else addToShortlist(id);
+  };
+
+  const handleSearch = () => { setApplied({ ...filters }); setPage(1); };
+  const handleClear  = () => { setFilters({ ...EMPTY_FILTERS }); setApplied({ ...EMPTY_FILTERS }); setPage(1); };
+
+  const setFilter = (key: keyof Filters) =>
+    (e: React.ChangeEvent<HTMLSelectElement>) =>
+      setFilters((prev) => ({ ...prev, [key]: e.target.value }));
+
+  const getPageNumbers = (): (number | "...")[] => {
+    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    if (page <= 3)              return [1, 2, 3, "...", totalPages];
+    if (page >= totalPages - 2) return [1, "...", totalPages - 2, totalPages - 1, totalPages];
+    return [1, "...", page - 1, page, page + 1, "...", totalPages];
+  };
+
+  const sel = "h-10 px-3 rounded-xl border border-gray-200 bg-white text-sm outline-none focus:border-[#6c63d4] focus:ring-2 focus:ring-[#6c63d4]/20 transition cursor-pointer";
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold text-gray-900">Browse Graduates</h1>
+
+      {/* Filters */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {[
+            { label: "Track",                 key: "track",          options: TRACKS },
+            { label: "English Score (Min)",   key: "englishScore",   options: SCORES },
+            { label: "Technical Score (Min)", key: "technicalScore", options: SCORES },
+            { label: "IQ Score (Min)",        key: "iqScore",        options: SCORES },
+            { label: "Gender",                key: "gender",         options: GENDERS },
+            { label: "Graduation Year",       key: "graduationYear", options: YEARS  },
+          ].map(({ label, key, options }) => (
+            <div key={key} className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                {label}
+              </label>
+              <select
+                value={filters[key as keyof Filters]}
+                onChange={setFilter(key as keyof Filters)}
+                className={sel}
+              >
+                {options.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 mt-4">
+          <button onClick={handleClear}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors">
+            <X className="w-4 h-4" /> Clear Filters
+          </button>
+          <button onClick={handleSearch}
+            className="flex items-center gap-2 px-6 py-2 rounded-xl bg-[#6c63d4] text-white text-sm font-semibold hover:bg-[#5a4fcf] transition-colors">
+            <Search className="w-4 h-4" /> Search
+          </button>
+        </div>
+      </div>
 
       {/* Loading */}
       {isLoading && (
-        <div className="grid grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Card key={i} className="border border-[#e8e4ff] animate-pulse">
-              <CardContent className="p-5 space-y-3">
-                <div className="w-12 h-12 rounded-full bg-[#e8e4ff]" />
-                <div className="h-3 bg-[#e8e4ff] rounded w-3/4" />
-                <div className="h-3 bg-[#e8e4ff] rounded w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
+        <div className="flex items-center justify-center h-48">
+          <div className="w-8 h-8 border-4 border-[#6c63d4] border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {/* Error */}
       {isError && (
-        <div className="text-center py-10 text-red-400">
-          Failed to load graduates. Please check server connections.
+        <div className="text-center text-red-500 font-medium py-10">
+          Failed to load graduates. Please try again.
         </div>
       )}
 
-      {/* Graduate Cards */}
+      {/* Cards */}
       {!isLoading && !isError && (
         <>
-          {graduates.length === 0 ? (
-            <div className="text-center py-10 text-[#7b74e6]">No graduates found matching criteria.</div>
+          {filtered.length > 0 && (
+            <p className="text-sm text-gray-400">
+              Showing <span className="font-semibold text-gray-600">{filtered.length}</span>{" "}
+              graduate{filtered.length !== 1 ? "s" : ""}
+            </p>
+          )}
+
+          {filtered.length === 0 ? (
+            <div className="text-center text-gray-400 py-16 text-sm">
+              No graduates found matching your filters.
+            </div>
           ) : (
-            <div className="grid grid-cols-4 gap-4">
-              {graduates.map((g) => {
-                const isStarred = shortlistedIds.includes(g._id);
-                const isPending =
-                  (addMutation.isPending && addMutation.variables === g._id) ||
-                  (removeMutation.isPending && removeMutation.variables === g._id);
-
-                return (
-                  <Card key={g._id} className="border border-[#e8e4ff] shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="p-5 relative">
-
-                      {/* Star button */}
-                      <button
-                        onClick={() => toggleShortlist(g._id)}
-                        disabled={isPending}
-                        className="absolute top-4 right-4 text-[#b8a9ff] hover:text-yellow-400 transition-colors disabled:opacity-40"
-                        title={isStarred ? "Remove from shortlist" : "Add to shortlist"}
-                      >
-                        <Star className={`w-4 h-4 ${isStarred ? "fill-yellow-400 text-yellow-400" : ""}`} />
-                      </button>
-
-                      {/* Avatar */}
-                      {g.profilePicture && !g.profilePicture.includes("default") ? (
-                        <img src={g.profilePicture} alt={g.fullName} className="w-12 h-12 rounded-full object-cover mb-3" />
-                      ) : (
-                        <div className="w-12 h-12 rounded-full bg-[#111033] text-white flex items-center justify-center text-sm font-semibold mb-3">
-                          {getInitials(g.fullName)}
-                        </div>
-                      )}
-
-                      <h3 className="font-semibold text-[#111033] text-sm truncate">{g.fullName}</h3>
-                      <Badge className="bg-[#f3f0ff] text-[#6c63ff] hover:bg-[#f3f0ff] mb-4 mt-1 text-xs">
-                        {g.track} Track
-                      </Badge>
-
-                      <ScoreBar label="IQ Score" value={g.scores?.iq ?? 0} />
-                      <ScoreBar label="English Score" value={g.scores?.english ?? 0} />
-                      <ScoreBar label="Technical Score" value={g.scores?.technical ?? 0} />
-
-                      {/* ✅ Contact button opens modal */}
-                      <Button
-                        variant="outline"
-                        onClick={() => setContactGraduate(g)}
-                        className="w-full mt-4 border-[#b8a9ff] text-[#6c63ff] hover:bg-[#f3f0ff]"
-                      >
-                        Contact
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {paginated.map((grad) => (
+                <GraduateCard
+                  key={grad._id}
+                  grad={grad}
+                  isShortlisted={shortlisted.has(grad._id)}
+                  onToggleShortlist={handleToggleShortlist}
+                  onContact={setContactTarget}
+                />
+              ))}
             </div>
           )}
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
-              <Button
-                variant="outline" size="icon"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="border-[#b8a9ff] text-[#6c63ff]"
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="w-9 h-9 rounded-xl border border-gray-200 text-gray-500 text-sm hover:border-[#6c63d4] hover:text-[#6c63d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
+                &lt;
+              </button>
 
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
-                <Button
-                  key={p}
-                  onClick={() => setCurrentPage(p)}
-                  size="icon"
-                  className={
-                    currentPage === p
-                      ? "bg-[#6c63ff] text-white hover:bg-[#4d44db]"
-                      : "border border-[#b8a9ff] text-[#6c63ff] bg-white hover:bg-[#f3f0ff]"
-                  }
-                >
-                  {p}
-                </Button>
-              ))}
+              {getPageNumbers().map((p, i) =>
+                p === "..." ? (
+                  <span key={`e-${i}`} className="text-gray-400 text-sm px-1">...</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p as number)}
+                    className={`w-9 h-9 rounded-xl text-sm font-semibold transition-colors ${
+                      page === p
+                        ? "bg-[#6c63d4] text-white"
+                        : "border border-gray-200 text-gray-600 hover:border-[#6c63d4] hover:text-[#6c63d4]"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
 
-              {totalPages > 5 && <span className="text-[#b8a9ff]">...</span>}
-
-              <Button
-                variant="outline" size="icon"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="border-[#b8a9ff] text-[#6c63ff]"
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="w-9 h-9 rounded-xl border border-gray-200 text-gray-500 text-sm hover:border-[#6c63d4] hover:text-[#6c63d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+                &gt;
+              </button>
             </div>
           )}
         </>
+      )}
+
+      {/* Contact Modal */}
+      {contactTarget && (
+        <ContactModal
+          graduate={contactTarget}
+          token={token}
+          onClose={() => setContactTarget(null)}
+        />
       )}
     </div>
   );
