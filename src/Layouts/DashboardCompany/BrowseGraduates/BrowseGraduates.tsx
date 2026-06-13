@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Search, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Star, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Card, CardContent } from "@/Components/ui/card";
-import { Button } from "@/Components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/Components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -31,7 +31,7 @@ interface FiltersState {
   graduationYear: string;
 }
 
-// ─── Axios instance (FIXED: Default port updated to 5000 per API doc) ─────────
+// ─── Axios instance ───────────────────────────────────────────────────────────
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1",
 });
@@ -47,7 +47,7 @@ const fetchGraduates = async (filters: FiltersState, page: number) => {
   const { data } = await api.get("/company/graduates", {
     params: {
       page,
-      limit: 4,
+      limit: 8,
       ...(filters.track && filters.track !== "all" && { track: filters.track }),
       ...(filters.englishScore && { minEnglish: filters.englishScore }),
       ...(filters.technicalScore && { minTechnical: filters.technicalScore }),
@@ -59,15 +59,14 @@ const fetchGraduates = async (filters: FiltersState, page: number) => {
   return data;
 };
 
-// NEW: Fetch all currently shortlisted items to accurately persist star icons
 const fetchShortlistedGraduates = async () => {
   const { data } = await api.get("/company/shortlisted");
   return data;
 };
 
-// FIXED: Changed from GET with params to PUT with a path parameter /:graduateId
+// ✅ FIXED: POST not PUT
 const addToShortlist = async (graduateId: string) => {
-  const { data } = await api.put(`/company/shortlist/${graduateId}`);
+  const { data } = await api.post(`/company/shortlist/${graduateId}`);
   return data;
 };
 
@@ -76,7 +75,13 @@ const removeFromShortlist = async (graduateId: string) => {
   return data;
 };
 
-// ─── ScoreBar Component ───────────────────────────────────────────────────────
+// ✅ Contact offer API
+const sendOffer = async ({ graduateId, position, message }: { graduateId: string; position: string; message: string }) => {
+  const { data } = await api.post("/offers", { graduate: graduateId, position, message });
+  return data;
+};
+
+// ─── ScoreBar ─────────────────────────────────────────────────────────────────
 const ScoreBar = ({ label, value }: { label: string; value: number }) => (
   <div className="mb-2">
     <div className="flex justify-between text-xs text-[#7b74e6] mb-1">
@@ -84,10 +89,7 @@ const ScoreBar = ({ label, value }: { label: string; value: number }) => (
       <span>{value}</span>
     </div>
     <div className="h-1.5 bg-[#f3f0ff] rounded-full">
-      <div
-        className="h-1.5 bg-[#6c63ff] rounded-full transition-all"
-        style={{ width: `${value}%` }}
-      />
+      <div className="h-1.5 bg-[#6c63ff] rounded-full transition-all" style={{ width: `${value}%` }} />
     </div>
   </div>
 );
@@ -95,10 +97,105 @@ const ScoreBar = ({ label, value }: { label: string; value: number }) => (
 const getInitials = (name: string) =>
   name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
+// ─── Contact Modal ────────────────────────────────────────────────────────────
+const ContactModal = ({
+  graduate,
+  onClose,
+}: {
+  graduate: Graduate;
+  onClose: () => void;
+}) => {
+  const [position, setPosition] = useState("");
+  const [message, setMessage] = useState("We are impressed with your profile and would like to offer you this position.");
+  const [sent, setSent] = useState(false);
+
+  const offerMutation = useMutation({
+    mutationFn: sendOffer,
+    onSuccess: () => setSent(true),
+  });
+
+  const handleSend = () => {
+    if (!position.trim()) return alert("Please enter a position.");
+    offerMutation.mutate({ graduateId: graduate._id, position, message });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+          <X className="w-5 h-5" />
+        </button>
+
+        {sent ? (
+          <div className="text-center py-6">
+            <div className="w-14 h-14 rounded-full bg-[#f3f0ff] flex items-center justify-center mx-auto mb-4">
+              <Star className="w-6 h-6 text-[#6c63ff] fill-[#6c63ff]" />
+            </div>
+            <h3 className="text-lg font-bold text-[#111033] mb-1">Offer Sent!</h3>
+            <p className="text-sm text-[#7b74e6]">Your offer was sent to {graduate.fullName}.</p>
+            <Button onClick={onClose} className="mt-4 bg-[#6c63ff] hover:bg-[#4d44db] text-white">
+              Close
+            </Button>
+          </div>
+        ) : (
+          <>
+            <h3 className="text-lg font-bold text-[#111033] mb-1">Contact Graduate</h3>
+            <p className="text-sm text-[#7b74e6] mb-4">Send an offer to <span className="font-semibold">{graduate.fullName}</span></p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-[#7b74e6] block mb-1">POSITION</label>
+                <input
+                  type="text"
+                  value={position}
+                  onChange={(e) => setPosition(e.target.value)}
+                  placeholder="e.g. Frontend Developer"
+                  className="w-full border border-[#b8a9ff] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6c63ff]"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-[#7b74e6] block mb-1">MESSAGE</label>
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  rows={3}
+                  className="w-full border border-[#b8a9ff] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6c63ff] resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="flex-1 border-[#b8a9ff] text-[#6c63ff] hover:bg-[#f3f0ff]"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSend}
+                disabled={offerMutation.isPending}
+                className="flex-1 bg-[#6c63ff] hover:bg-[#4d44db] text-white"
+              >
+                {offerMutation.isPending ? "Sending..." : "Send Offer"}
+              </Button>
+            </div>
+
+            {offerMutation.isError && (
+              <p className="text-red-500 text-xs mt-2 text-center">Failed to send offer. Try again.</p>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 const BrowseGraduates = () => {
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
+  const [contactGraduate, setContactGraduate] = useState<Graduate | null>(null);
 
   const [appliedFilters, setAppliedFilters] = useState<FiltersState>({
     track: "all", englishScore: "", technicalScore: "",
@@ -106,13 +203,11 @@ const BrowseGraduates = () => {
   });
   const [draftFilters, setDraftFilters] = useState<FiltersState>({ ...appliedFilters });
 
-  // ── Query: Fetch Graduates ──
   const { data, isLoading, isError } = useQuery({
     queryKey: ["graduates", appliedFilters, currentPage],
     queryFn: () => fetchGraduates(appliedFilters, currentPage),
   });
 
-  // ── Query: Fetch Shortlist State ──
   const { data: shortlistData } = useQuery({
     queryKey: ["shortlistedGraduates"],
     queryFn: fetchShortlistedGraduates,
@@ -121,23 +216,19 @@ const BrowseGraduates = () => {
   const graduates: Graduate[] = data?.data?.graduates ?? [];
   const totalPages: number = data?.totalPages ?? 1;
 
-  // Extract array of IDs that are currently starred on the backend database
-  const shortlistedIds: string[] = shortlistData?.data?.shortlists?.map((item: any) => item._id) ?? [];
+  // ✅ FIXED: use item.graduate._id not item._id
+  const shortlistedIds: string[] = shortlistData?.data?.shortlists
+    ?.filter((item: any) => item.graduate !== null && item.graduate !== undefined)
+    ?.map((item: any) => item.graduate._id) ?? [];
 
-  // ── Add Mutation (FIXED: Invalidates cache cleanly for instant visual updates) ──
   const addMutation = useMutation({
     mutationFn: addToShortlist,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shortlistedGraduates"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["shortlistedGraduates"] }),
   });
 
-  // ── Remove Mutation ──
   const removeMutation = useMutation({
     mutationFn: removeFromShortlist,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shortlistedGraduates"] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["shortlistedGraduates"] }),
   });
 
   const toggleShortlist = (id: string) => {
@@ -167,11 +258,15 @@ const BrowseGraduates = () => {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <h1 className="text-2xl font-bold text-[#111033]">Browse Graduates</h1>
 
-      {/* ── Filters Card ── */}
+      {/* Contact Modal */}
+      {contactGraduate && (
+        <ContactModal graduate={contactGraduate} onClose={() => setContactGraduate(null)} />
+      )}
+
+      {/* Filters Card */}
       <Card className="border border-[#e8e4ff] shadow-sm">
         <CardContent className="p-5">
           <div className="grid grid-cols-6 gap-4">
-            {/* TRACK */}
             <div>
               <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">TRACK</p>
               <Select value={draftFilters.track} onValueChange={(v) => setDraftFilters(p => ({ ...p, track: v }))}>
@@ -187,7 +282,6 @@ const BrowseGraduates = () => {
               </Select>
             </div>
 
-            {/* ENGLISH SCORE */}
             <div>
               <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">ENGLISH SCORE (MIN)</p>
               <Select value={draftFilters.englishScore} onValueChange={(v) => setDraftFilters(p => ({ ...p, englishScore: v }))}>
@@ -200,7 +294,6 @@ const BrowseGraduates = () => {
               </Select>
             </div>
 
-            {/* TECHNICAL SCORE */}
             <div>
               <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">TECHNICAL SCORE (MIN)</p>
               <Select value={draftFilters.technicalScore} onValueChange={(v) => setDraftFilters(p => ({ ...p, technicalScore: v }))}>
@@ -213,7 +306,6 @@ const BrowseGraduates = () => {
               </Select>
             </div>
 
-            {/* IQ SCORE */}
             <div>
               <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">IQ SCORE (MIN)</p>
               <Select value={draftFilters.iqScore} onValueChange={(v) => setDraftFilters(p => ({ ...p, iqScore: v }))}>
@@ -226,7 +318,6 @@ const BrowseGraduates = () => {
               </Select>
             </div>
 
-            {/* GENDER */}
             <div>
               <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">GENDER</p>
               <Select value={draftFilters.gender} onValueChange={(v) => setDraftFilters(p => ({ ...p, gender: v }))}>
@@ -239,7 +330,6 @@ const BrowseGraduates = () => {
               </Select>
             </div>
 
-            {/* GRADUATION YEAR */}
             <div>
               <p className="text-xs font-semibold text-[#7b74e6] tracking-wide mb-2">GRADUATION YEAR</p>
               <Select value={draftFilters.graduationYear} onValueChange={(v) => setDraftFilters(p => ({ ...p, graduationYear: v }))}>
@@ -265,10 +355,10 @@ const BrowseGraduates = () => {
         </CardContent>
       </Card>
 
-      {/* ── Loading Skeleton State ── */}
+      {/* Loading */}
       {isLoading && (
         <div className="grid grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <Card key={i} className="border border-[#e8e4ff] animate-pulse">
               <CardContent className="p-5 space-y-3">
                 <div className="w-12 h-12 rounded-full bg-[#e8e4ff]" />
@@ -280,14 +370,14 @@ const BrowseGraduates = () => {
         </div>
       )}
 
-      {/* ── Error State ── */}
+      {/* Error */}
       {isError && (
         <div className="text-center py-10 text-red-400">
           Failed to load graduates. Please check server connections.
         </div>
       )}
 
-      {/* ── Graduate Cards List View ── */}
+      {/* Graduate Cards */}
       {!isLoading && !isError && (
         <>
           {graduates.length === 0 ? (
@@ -303,26 +393,20 @@ const BrowseGraduates = () => {
                 return (
                   <Card key={g._id} className="border border-[#e8e4ff] shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="p-5 relative">
-                      
-                      {/* Star shortlist button */}
+
+                      {/* Star button */}
                       <button
                         onClick={() => toggleShortlist(g._id)}
                         disabled={isPending}
                         className="absolute top-4 right-4 text-[#b8a9ff] hover:text-yellow-400 transition-colors disabled:opacity-40"
                         title={isStarred ? "Remove from shortlist" : "Add to shortlist"}
                       >
-                        <Star
-                          className={`w-4 h-4 ${isStarred ? "fill-yellow-400 text-yellow-400" : ""}`}
-                        />
+                        <Star className={`w-4 h-4 ${isStarred ? "fill-yellow-400 text-yellow-400" : ""}`} />
                       </button>
 
-                      {/* Profile Image / Initials Avatar */}
+                      {/* Avatar */}
                       {g.profilePicture && !g.profilePicture.includes("default") ? (
-                        <img
-                          src={g.profilePicture}
-                          alt={g.fullName}
-                          className="w-12 h-12 rounded-full object-cover mb-3"
-                        />
+                        <img src={g.profilePicture} alt={g.fullName} className="w-12 h-12 rounded-full object-cover mb-3" />
                       ) : (
                         <div className="w-12 h-12 rounded-full bg-[#111033] text-white flex items-center justify-center text-sm font-semibold mb-3">
                           {getInitials(g.fullName)}
@@ -338,8 +422,10 @@ const BrowseGraduates = () => {
                       <ScoreBar label="English Score" value={g.scores?.english ?? 0} />
                       <ScoreBar label="Technical Score" value={g.scores?.technical ?? 0} />
 
+                      {/* ✅ Contact button opens modal */}
                       <Button
                         variant="outline"
+                        onClick={() => setContactGraduate(g)}
                         className="w-full mt-4 border-[#b8a9ff] text-[#6c63ff] hover:bg-[#f3f0ff]"
                       >
                         Contact
@@ -351,7 +437,7 @@ const BrowseGraduates = () => {
             </div>
           )}
 
-          {/* ── Pagination Controls ── */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-6">
               <Button
