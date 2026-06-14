@@ -48,18 +48,7 @@ const links = [
     path: "/dashboardadmin/reports",
     section: "ANALYTICS",
   },
-  {
-    title: "Star Companies",
-    icon: BarChart3,
-    path: "/dashboardadmin/starcompanies",
-    section: "MANAGEMENT",
-  },
-  {
-    title: "Star Graduates",
-    icon: BarChart3,
-    path: "/dashboardadmin/stargraduates",
-    section: "MANAGEMENT",
-  },
+ 
   {
     title: "Support Message",
     icon: BarChart3,

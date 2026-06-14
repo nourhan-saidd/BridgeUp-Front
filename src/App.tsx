@@ -16,8 +16,6 @@ import SuccessResetPassword from "./Auth/SuccessResetPassword/SuccessResetPasswo
 import DashboardAdmin from "./Layouts/DashboardAdmin/DashboardAdmin";
 import ReportsAdmin from "./Layouts/DashboardAdmin/ReportsAdmin/ReportsAdmin";
 import RoadmapAdmin from "./Layouts/DashboardAdmin/RoadmapAdmin/RoadmapAdmin";
-import StarCompanyAdmin from "./Layouts/DashboardAdmin/StarCompanyAdmin/StarCompanyAdmin";
-import StarGraduatesAdmin from "./Layouts/DashboardAdmin/StarGraduatesAdmin/StarGraduatesAdmin";
 import SupportMessageAdmin from "./Layouts/DashboardAdmin/SupportMessageAdmin/SupportMessageAdmin";
 import DashboardCompany from "./Layouts/DashboardCompany/DashboardCompany";
 import BrowseGraduates from "./Layouts/DashboardCompany/BrowseGraduates/BrowseGraduates";
@@ -44,6 +42,9 @@ import TodaySupportMessage from "./Layouts/DashboardAdmin/TodaySupportMessage/To
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import RoadmapDetails from "./Layouts/DashboardAdmin/RoadmapDetails/RoadmapDetails";
 import PhasesDetails from "./Layouts/PhasesDetails/PhasesDetails";
+import QuestionsDetails from "./Layouts/DashboardAdmin/QuestionsDetails/QuestionsDetails";
+import PendingCompany from "./Layouts/DashboardAdmin/PendingCompany/PendingCompany";
+import AllCompanies from "./Layouts/DashboardAdmin/AllCompanies/AllCompanies";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -71,12 +72,14 @@ const router = createBrowserRouter([
       { index:true, element: <OverViewAdmin /> },
       { path:"overview", element: <OverViewAdmin/> },
       { path: "assessments", element: <AssessmentsAdmin/> },
-      { path: "companies", element: <CompaniesAdmin/> },
+      { path: "companies", element: <CompaniesAdmin/> , children:[
+        {index:true, element:<AllCompanies/>},
+        {path:'allcompanies' , element:<AllCompanies/>},
+        {path:'pendingcompanies' , element:<PendingCompany/>}
+      ]},
       { path: "graduates", element: <GraduatesAdmin/> },
       { path: "reports", element: <ReportsAdmin /> },
       { path: "roadmap", element: <RoadmapAdmin /> },
-      { path: "starcompanies", element: <StarCompanyAdmin /> },
-      { path: "stargraduates", element: <StarGraduatesAdmin /> },
       { path: "supportmessage", element: <SupportMessageAdmin /> , children:[
         {index:true , element: <TotalSupportMessage/> },
         {path:'total' , element: <TotalSupportMessage/> },
@@ -85,7 +88,8 @@ const router = createBrowserRouter([
         path:'roadmapdetails/:id' , element:<RoadmapDetails/>
       },{
         path:'phasesdetails/:id' , element:<PhasesDetails/>
-      }
+      },
+      {path:'questionsdetails/:id' , element:<QuestionsDetails/>}
       
       
       ,

@@ -138,7 +138,8 @@ export default function OverViewAdmin() {
   const compTotalPages = companiesData?.data?.totalPages ?? 1;
  
   return (
-    <div className="min-h-screen bg-[#f3f0ff] p-6 w-screen">
+<div className="min-h-screen bg-[#f3f0ff] overflow-x-hidden">
+  <div className="max-w-7xl mx-auto px-8 py-6">
       <h1 className="text-4xl font-bold text-slate-900 mb-8">Overview</h1>
  
       {/* ── Stats ── */}
@@ -327,6 +328,7 @@ export default function OverViewAdmin() {
           />
         </>
       )}
+    </div>
     </div>
   );
 }

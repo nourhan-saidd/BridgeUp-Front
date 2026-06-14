@@ -73,8 +73,10 @@ export default function GraduatesAdmin() {
     );
 
   return (
-    <div className="min-h-screen bg-[#f3f0ff] p-6 w-screen">
-      <h1 className="text-4xl font-bold text-slate-900 mb-8">
+<div className="min-h-screen bg-[#f3f0ff] overflow-x-hidden">
+  <div className="max-w-7xl mx-auto px-8 py-6">
+    
+          <h1 className="text-4xl font-bold text-slate-900 mb-8">
         Browse Graduates
       </h1>
 
@@ -268,6 +270,7 @@ export default function GraduatesAdmin() {
           </div>
         ))}
       </div>
+    </div>
     </div>
   );
 }

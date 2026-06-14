@@ -172,7 +172,7 @@ async function updateroadmap(){
 
             <button 
             onClick={()=>{deleteOne(map._id)}}
-            className="border rounded-xl p-2 bg-red-600 border-black font-bold cursor-pointer hover:bg-red-400">delete
+            className="border rounded-xl p-2 bg-violet-100 text-[#5b4b8a] border-black font-bold cursor-pointer hover:border-red-600">delete
             </button>
 
 
@@ -184,13 +184,13 @@ async function updateroadmap(){
         settrack(map.track);
          setSelectedId(map._id);
        }}   
-          className="border rounded-xl p-2 bg-yellow-400 border-black font-bold cursor-pointer hover:bg-yellow-200">update
+          className="border rounded-xl p-2 bg-violet-100 text-[#5b4b8a] border-black font-bold cursor-pointer hover:border-yellow-400">update
           </button>
                    <Link to={`/dashboardadmin/roadmapdetails/${map._id}`}>
  
  
           <button
-          className="border rounded-xl p-2 bg-blue-400 border-black font-bold cursor-pointer hover:bg-blue-200">show
+          className="border rounded-xl p-2 bg-violet-100 text-[#5b4b8a] border-black font-bold cursor-pointer hover:border-blue-500">show
           </button>
                    </Link>
 

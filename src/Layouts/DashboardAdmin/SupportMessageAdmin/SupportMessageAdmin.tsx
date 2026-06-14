@@ -34,8 +34,8 @@ if(isLoading) return <BeatLoader />
 if(isError) return <h1>error occured ... </h1>
 
   return (
-    <div className="min-h-screen bg-[#f3f0ff] p-6 w-screen">
-<div className="max-w-7xl mx-auto  p-5">
+  <div className="min-h-screen bg-[#f3f0ff] overflow-x-hidden">
+  <div className="max-w-7xl mx-auto px-8 py-6">
 
         {/* Header */}
         <div className="mb-8">
