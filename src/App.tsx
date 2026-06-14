@@ -41,7 +41,7 @@ import TotalSupportMessage from "./Layouts/DashboardAdmin/TotalSupportMessage/To
 import TodaySupportMessage from "./Layouts/DashboardAdmin/TodaySupportMessage/TodaySupportMessage";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import RoadmapDetails from "./Layouts/DashboardAdmin/RoadmapDetails/RoadmapDetails";
-import PhasesDetails from "./Layouts/PhasesDetails/PhasesDetails";
+import PhasesDetails from "./Layouts/DashboardAdmin/PhasesDetails/PhasesDetails";
 import QuestionsDetails from "./Layouts/DashboardAdmin/QuestionsDetails/QuestionsDetails";
 import PendingCompany from "./Layouts/DashboardAdmin/PendingCompany/PendingCompany";
 import AllCompanies from "./Layouts/DashboardAdmin/AllCompanies/AllCompanies";
