@@ -64,7 +64,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/dashboardadmin",
-    element:  <ProtectRoutes allowedRoles={["Admin"]}> <DashboardAdmin /> </ProtectRoutes>,
+    element:  <ProtectRoutes allowedRoles={["admin"]}> <DashboardAdmin /> </ProtectRoutes>,
     children: [
       { index:true, element: <OverViewAdmin /> },
       { path:"overview", element: <OverViewAdmin/> },
@@ -76,6 +76,7 @@ const router = createBrowserRouter([
       { path: "starcompanies", element: <StarCompanyAdmin /> },
       { path: "stargraduates", element: <StarGraduatesAdmin /> },
       { path: "supportmessage", element: <SupportMessageAdmin /> , children:[
+        {index:true , element: <TotalSupportMessage/> },
         {path:'total' , element: <TotalSupportMessage/> },
         {path:'today' , element:<TodaySupportMessage/>}
       ] },
@@ -84,7 +85,7 @@ const router = createBrowserRouter([
   },
   {
     path:'/dashboardCompany' , 
-     element:   <ProtectRoutes allowedRoles={["Company"]}> <DashboardCompany/> </ProtectRoutes>, children:[
+     element:   <ProtectRoutes allowedRoles={["company"]}> <DashboardCompany/> </ProtectRoutes>, children:[
       {index:true , element:<CompanyProfile/>},
       {path:"companyprofile" , element:<CompanyProfile/>},
       {path:"browsegraduate" , element:<BrowseGraduates/>},
@@ -95,7 +96,7 @@ const router = createBrowserRouter([
   }
   ,
   {
-    path:'dashboardgraduate' , element:  <ProtectRoutes allowedRoles={["Graduate"]}>  <DashboardGraduate/> </ProtectRoutes>, children:[
+    path:'dashboardgraduate' , element:  <ProtectRoutes allowedRoles={["graduate"]}>  <DashboardGraduate/> </ProtectRoutes>, children:[
       {index:true, element:<ProfilePageGraduate/>},
       {path:'profilepagegraduate' , element:<ProfilePageGraduate/>},
       {path:'roadmappagegraduate' , element:<RoadmapPageGraduate/>},
@@ -114,12 +115,12 @@ const queryclient=new QueryClient();
 function App() {
   return (
     <>
+    
 <QueryClientProvider client={queryclient}>
 <AuthContextProvider>
                <Toaster position="bottom-right" richColors/>
         <RouterProvider router={router} />
 </AuthContextProvider>
-
 </QueryClientProvider>
 
     </>
