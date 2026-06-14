@@ -1,329 +1,348 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import axiosinstance from "@/Context/BaseUrl/AxiosInstance";
 
-interface Graduate {
-  _id: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  age: number;
-  gender: string;
-  university: string;
-  graduationYear: number;
-  track: string;
+type Graduate = {
+  _id?: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  age?: number;
+  gender?: string;
+  university?: string;
+  graduationYear?: number;
+  track?: string;
   cv?: string;
   gitHubProfile?: string;
   linkedInProfile?: string;
   portfolioLink?: string;
-  profilePicture?: string;
   createdAt?: string;
+};
+
+const getToken = () =>
+  localStorage.getItem("token") ||
+  localStorage.getItem("userToken") ||
+  localStorage.getItem("jwt");
+
+async function getProfile() {
+  const endpoints = [
+    "/api/v1/graduates/me",
+    "/api/v1/auth/me",
+    "/api/v1/users/me",
+    "/api/v1/graduates/profile",
+    "/api/v1/graduates/my-profile",
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const { data } = await axiosinstance.get(endpoint, {
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
+      });
+
+      console.log("WORKING PROFILE ENDPOINT:", endpoint);
+      return data;
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error("No profile endpoint worked");
+}
+
+async function updateProfile(body: Partial<Graduate>) {
+  const { data } = await axiosinstance.put("/api/v1/graduates/me", body, {
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+
+  return data;
+}
+
+async function uploadCv(file: File) {
+  const formData = new FormData();
+  formData.append("cv", file);
+  formData.append("file", file);
+  formData.append("documents", file);
+
+  const { data } = await axiosinstance.put(
+    "/api/v1/graduates/me/documents",
+    formData,
+    {
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+
+  return data;
 }
 
 export default function ProfilePageGraduate() {
-  const [graduate, setGraduate] = useState<Graduate | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [uploadingCv, setUploadingCv] = useState(false);
+  const queryClient = useQueryClient();
+
   const [editMode, setEditMode] = useState(false);
-  const [editFullName, setEditFullName] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editAge, setEditAge] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editUniversity, setEditUniversity] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [phone, setPhone] = useState("");
 
-  const BASE_URL = "http://localhost:5000/api/v1";
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["graduateProfile"],
+    queryFn: getProfile,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  const graduate: Graduate =
+    data?.data || data?.graduate || data?.user || data || {};
 
-  async function fetchProfile() {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${BASE_URL}/graduates/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to fetch profile");
-      const json = await res.json();
-      setGraduate(json.data);
-      setEditFullName(json.data.fullName ?? "");
-      setEditPhone(json.data.phone ?? "");
-      setEditAge(json.data.age?.toString() ?? "");
-      setEditEmail(json.data.email ?? "");
-      setEditUniversity(json.data.university ?? "");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleSave() {
-    try {
-      setSaving(true);
-      setSaveError(null);
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${BASE_URL}/graduates/me`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fullName: editFullName,
-          phone: editPhone,
-          age: Number(editAge),
-          email: editEmail,
-          university: editUniversity,
-          graduationYear: graduate?.graduationYear,
-          portfolioLink: graduate?.portfolioLink,
-          gitHubProfile: graduate?.gitHubProfile,
-          linkedInProfile: graduate?.linkedInProfile,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to update profile");
-      await fetchProfile();
+  const updateMutation = useMutation({
+    mutationFn: updateProfile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["graduateProfile"] });
       setEditMode(false);
-    } catch (err: any) {
-      setSaveError(err.message);
-    } finally {
-      setSaving(false);
-    }
+    },
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: uploadCv,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["graduateProfile"] });
+    },
+  });
+
+  function handleEdit() {
+    setPhone(graduate.phone || "");
+    setEditMode(true);
   }
 
-  async function handleCvUpload(file: File) {
-    try {
-      setUploadingCv(true);
-      const token = localStorage.getItem("token");
-      const formData = new FormData();
-      formData.append("cv", file);
-      const res = await fetch(`${BASE_URL}/graduates/me/documents`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Failed to upload CV");
-      await fetchProfile();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      setUploadingCv(false);
-    }
+  function handleSave() {
+    updateMutation.mutate({
+      phone,
+    });
   }
 
-  const initials = graduate?.fullName
-    ? graduate.fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
-    : "AH";
+  const initials =
+    graduate.fullName
+      ?.split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "G";
 
-  const cvFileName = graduate?.cv ? graduate.cv.split("/").pop() : null;
+  const cvFileName = graduate.cv ? graduate.cv.split("/").pop() : null;
 
-  const cvUploadedAt = graduate?.createdAt
-    ? new Date(graduate.createdAt).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
-    : null;
+  if (isLoading) {
+    return <div className="p-10 text-center">Loading...</div>;
+  }
 
-  if (loading) {
+  if (isError) {
     return (
-      <div className="flex items-center justify-center h-screen text-gray-400 text-sm">
-        Loading...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-screen text-red-500 text-sm">
-        {error}
+      <div className="p-10 text-center text-red-500">
+        Error Loading Profile
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Profile</h1>
+      <h1 className="mb-6 text-2xl font-semibold text-gray-800">
+        Profile
+      </h1>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex justify-between items-start shadow-sm">
-          <div className="flex-1">
-            <p className="text-sm text-gray-500 mb-1">Profile Completion</p>
-            <p className="text-3xl font-semibold text-gray-800 mb-3">75%</p>
-            <div className="w-full h-1.5 bg-gray-100 rounded-full">
-              <div className="h-full bg-indigo-600 rounded-full" style={{ width: "75%" }} />
-            </div>
-          </div>
-          <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center ml-4 flex-shrink-0">
-            <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex justify-between items-start shadow-sm">
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Exams Done</p>
-            <p className="text-3xl font-semibold text-gray-800 mb-1">2/3</p>
-            <p className="text-xs text-gray-400">Technical remaining</p>
-          </div>
-          <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 flex justify-between items-start shadow-sm">
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Job Offers</p>
-            <p className="text-3xl font-semibold text-gray-800 mb-1">0</p>
-            <p className="text-xs text-gray-400">Awaiting your reply</p>
-          </div>
-          <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" />
-            </svg>
-          </div>
-        </div>
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <StatCard title="Profile Completion" value="75%" sub="Almost done" />
+        <StatCard title="Exams Done" value="2/3" sub="Technical remaining" />
+        <StatCard title="Job Offers" value="0" sub="Awaiting your reply" />
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-5 shadow-sm">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-base font-semibold text-gray-800">Personal Information</h2>
-          <div className="flex items-center gap-2">
-            {saveError && <span className="text-xs text-red-500">{saveError}</span>}
-            {editMode ? (
-              <>
-                <button onClick={() => { setEditMode(false); setSaveError(null); }} className="text-sm border border-gray-200 rounded-lg px-4 py-1.5 text-gray-600 hover:bg-gray-50 transition">
-                  Cancel
-                </button>
-                <button onClick={handleSave} disabled={saving} className="text-sm bg-indigo-600 text-white rounded-lg px-4 py-1.5 hover:bg-indigo-700 transition disabled:opacity-50">
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-              </>
-            ) : (
-              <button onClick={() => setEditMode(true)} className="text-sm border border-gray-200 rounded-lg px-4 py-1.5 text-gray-600 hover:bg-gray-50 transition flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                Edit Profile
+      <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-base font-semibold text-gray-800">
+            Personal Information
+          </h2>
+
+          {editMode ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditMode(false)}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600"
+              >
+                Cancel
               </button>
-            )}
-          </div>
+
+              <button
+                onClick={handleSave}
+                disabled={updateMutation.isPending}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+              >
+                {updateMutation.isPending ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleEdit}
+              className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600"
+            >
+              Edit Profile
+            </button>
+          )}
         </div>
 
-        <div className="flex gap-6 items-start">
-          <div className="w-20 h-20 rounded-2xl bg-indigo-600 flex items-center justify-center text-white text-2xl font-semibold flex-shrink-0">
+        <div className="flex gap-6">
+          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-2xl font-semibold text-white">
             {initials}
           </div>
 
-          <div className="grid grid-cols-2 gap-x-16 gap-y-6 flex-1">
-            <div>
-              <p className="text-xs text-gray-400 mb-1">Name</p>
-              {editMode ? (
-                <input type="text" value={editFullName} onChange={(e) => setEditFullName(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 w-full focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200" />
-              ) : (
-                <p className="text-sm font-medium text-gray-700">{graduate?.fullName}</p>
-              )}
-            </div>
+          <div className="grid flex-1 grid-cols-1 gap-6 md:grid-cols-2">
+            <Info label="Name" value={graduate.fullName} />
 
             <div>
-              <p className="text-xs text-gray-400 mb-1">Track</p>
-              <span className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full font-medium">
-                {graduate?.track} Track
+              <p className="mb-1 text-xs text-gray-400">Track</p>
+              <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+                {graduate.track || "No Track"} Track
               </span>
             </div>
 
+            <Info label="Email" value={graduate.email} />
+
             <div>
-              <p className="text-xs text-gray-400 mb-1">Email</p>
+              <p className="mb-1 text-xs text-gray-400">Phone</p>
+
               {editMode ? (
-                <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 w-full focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200" />
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-indigo-400"
+                />
               ) : (
-                <p className="text-sm text-gray-700">{graduate?.email}</p>
+                <p className="text-sm text-gray-700">
+                  {graduate.phone || "-"}
+                </p>
               )}
             </div>
 
-            <div>
-              <p className="text-xs text-gray-400 mb-1">Phone</p>
-              {editMode ? (
-                <input type="tel" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 w-full focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200" />
-              ) : (
-                <p className="text-sm text-gray-700">{graduate?.phone}</p>
-              )}
-            </div>
+            <Info
+              label="Age"
+              value={graduate.age ? `${graduate.age} years` : "-"}
+            />
 
-            <div>
-              <p className="text-xs text-gray-400 mb-1">Age</p>
-              {editMode ? (
-                <input type="number" value={editAge} onChange={(e) => setEditAge(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 w-full focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200" />
-              ) : (
-                <p className="text-sm text-gray-700">{graduate?.age} years</p>
-              )}
-            </div>
+            <Info label="University" value={graduate.university} />
 
-            <div>
-              <p className="text-xs text-gray-400 mb-1">University</p>
-              {editMode ? (
-                <input type="text" value={editUniversity} onChange={(e) => setEditUniversity(e.target.value)} className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 w-full focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200" />
-              ) : (
-                <p className="text-sm text-gray-700">{graduate?.university}</p>
-              )}
-            </div>
+            <Info
+              label="Graduation Year"
+              value={graduate.graduationYear?.toString()}
+            />
 
-            <div>
-              <p className="text-xs text-gray-400 mb-1">Graduation Year</p>
-              <p className="text-sm text-gray-700">{graduate?.graduationYear}</p>
-            </div>
+            <Info label="Gender" value={graduate.gender} />
           </div>
         </div>
+
+        {updateMutation.isSuccess && (
+          <p className="mt-4 text-sm text-green-600">
+            Phone updated successfully
+          </p>
+        )}
+
+        {updateMutation.isError && (
+          <p className="mt-4 text-sm text-red-500">
+            Failed to update phone
+          </p>
+        )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-5">
-          <h2 className="text-base font-semibold text-gray-800">Documents & Links</h2>
-        </div>
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h2 className="mb-5 text-base font-semibold text-gray-800">
+          Documents & Links
+        </h2>
 
-        <div className="flex justify-between items-center border border-gray-100 rounded-xl px-4 py-3 mb-4 bg-gray-50">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700">{cvFileName ?? "No CV uploaded"}</p>
-              {cvUploadedAt && <p className="text-xs text-gray-400">Uploaded {cvUploadedAt}</p>}
-            </div>
+        <div className="mb-4 flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-gray-700">
+              {cvFileName || "No CV uploaded"}
+            </p>
+            <p className="text-xs text-gray-400">
+              Upload or update your CV
+            </p>
+
+            {uploadMutation.isSuccess && (
+              <p className="mt-1 text-xs text-green-600">
+                CV uploaded successfully
+              </p>
+            )}
+
+            {uploadMutation.isError && (
+              <p className="mt-1 text-xs text-red-600">
+                Failed to upload CV
+              </p>
+            )}
           </div>
+
           <label className="cursor-pointer">
-            <input type="file" accept=".pdf" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCvUpload(f); }} />
-            <span className="flex items-center gap-1.5 text-sm border border-gray-200 bg-white rounded-lg px-4 py-1.5 hover:bg-gray-50 transition text-gray-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              {uploadingCv ? "Uploading..." : "Update CV"}
+            <input
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) uploadMutation.mutate(file);
+              }}
+            />
+
+            <span className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
+              {uploadMutation.isPending ? "Uploading..." : "Update CV"}
             </span>
           </label>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <a href={graduate?.portfolioLink ?? "#"} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 border border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-500 hover:bg-gray-50 transition bg-gray-50">
-            <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            Portfolio
-          </a>
-          <a href={graduate?.gitHubProfile ?? "#"} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 border border-gray-100 rounded-xl px-4 py-3 text-sm text-gray-500 hover:bg-gray-50 transition bg-gray-50">
-            <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            GitHub
-          </a>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <LinkBox label="Portfolio" href={graduate.portfolioLink} />
+          <LinkBox label="GitHub" href={graduate.gitHubProfile} />
+          <LinkBox label="LinkedIn" href={graduate.linkedInProfile} />
         </div>
       </div>
     </div>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  sub,
+}: {
+  title: string;
+  value: string;
+  sub: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <p className="mb-1 text-sm text-gray-500">{title}</p>
+      <p className="mb-1 text-3xl font-semibold text-gray-800">{value}</p>
+      <p className="text-xs text-gray-400">{sub}</p>
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value?: string }) {
+  return (
+    <div>
+      <p className="mb-1 text-xs text-gray-400">{label}</p>
+      <p className="text-sm text-gray-700">{value || "-"}</p>
+    </div>
+  );
+}
+
+function LinkBox({ label, href }: { label: string; href?: string }) {
+  return (
+    <a
+      href={href || "#"}
+      target="_blank"
+      rel="noreferrer"
+      className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-500 hover:bg-gray-100"
+    >
+      {label}
+    </a>
   );
 }
