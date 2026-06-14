@@ -52,15 +52,12 @@ toast.success('Login successfully 🎉')
 
 setTimeout(() => {
 
+// AFTER — lowercase to match backend
 if(role === 'graduate'){
-  navigate('/dashboardGraduate')
-}
-
-else if(role === 'company'){
+  navigate('/dashboardgraduate')
+} else if(role === 'company'){
   navigate('/dashboardCompany')
-}
-
-else if(role === 'admin'){
+} else if(role === 'admin'){
   navigate('/dashboardadmin')
 }
 

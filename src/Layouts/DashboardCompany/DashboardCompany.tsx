@@ -50,7 +50,7 @@ export default function DashboardCompany() {
     <SidebarProvider>
       <AppSidebar linksAdmin={linksCompany} sections={sections} />
 
-      <main>
+      <main   className="flex-1 min-h-screen w-full overflow-y-auto bg-gray-50">
         <SidebarTrigger />
         <Outlet />
       </main>
