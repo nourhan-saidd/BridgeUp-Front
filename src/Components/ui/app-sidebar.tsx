@@ -1,10 +1,4 @@
 import {
-  LayoutGrid,
-  Users,
-  Building2,
-  ClipboardList,
-  Map,
-  BarChart3,
   LogOut,
   Shield,
   Gift,
@@ -34,23 +28,14 @@ type AppSidebarProps = {
   sections: string[];
 };
 
-const getLinkStyle = (isActive: boolean, section: string) => {
+const getLinkStyle = (isActive: boolean) => {
   if (isActive) {
-    if (section === "OVERVIEW") {
-      return "bg-[#5B4BDB] text-white";
-    }
-    return "bg-[#ECE9FF] text-[#5B4BDB]";
+    return "bg-[#5B4BDB] text-white";
   }
-
   return "text-gray-700 hover:bg-[#ECE9FF] hover:text-[#5B4BDB]";
 };
 
- 
-
-
-
 export function AppSidebar({ linksAdmin, sections }: AppSidebarProps) {
-
   const { getRemoveLogin } = useContext(authContext);
   const navigate = useNavigate();
 
@@ -58,7 +43,6 @@ export function AppSidebar({ linksAdmin, sections }: AppSidebarProps) {
     getRemoveLogin();
     navigate("/login");
   };
- 
 
   return (
     <Sidebar className="border-r bg-white">
@@ -68,7 +52,6 @@ export function AppSidebar({ linksAdmin, sections }: AppSidebarProps) {
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#5B4BDB]">
             <Gift className="text-white" size={22} />
           </div>
-
           <h1 className="text-2xl font-bold text-[#5B4BDB]">BridgeUp</h1>
         </div>
 
@@ -94,8 +77,7 @@ export function AppSidebar({ linksAdmin, sections }: AppSidebarProps) {
                     key={item.title}
                     to={item.path}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200
-                      ${getLinkStyle(isActive, section)}`
+                      `flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 ${getLinkStyle(isActive)}`
                     }
                   >
                     <item.icon size={20} />
@@ -109,8 +91,11 @@ export function AppSidebar({ linksAdmin, sections }: AppSidebarProps) {
 
       {/* FOOTER */}
       <SidebarFooter className="border-t p-4">
-        <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-gray-700 hover:bg-[#ECE9FF] hover:text-[#5B4BDB]">
-          <LogOut size={20}  />
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-gray-700 hover:bg-[#ECE9FF] hover:text-[#5B4BDB]"
+        >
+          <LogOut size={20} />
           <span className="font-medium">Logout</span>
         </button>
       </SidebarFooter>
