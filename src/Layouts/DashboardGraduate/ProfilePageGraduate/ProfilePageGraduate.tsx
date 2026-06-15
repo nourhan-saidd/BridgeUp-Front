@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosinstance from "@/Context/BaseUrl/AxiosInstance";
 
@@ -13,10 +13,10 @@ type Graduate = {
   graduationYear?: number;
   track?: string;
   cv?: string;
+  profilePicture?: string;
   gitHubProfile?: string;
   linkedInProfile?: string;
   portfolioLink?: string;
-  createdAt?: string;
 };
 
 const getToken = () =>
@@ -25,30 +25,13 @@ const getToken = () =>
   localStorage.getItem("jwt");
 
 async function getProfile() {
-  const endpoints = [
-    "/api/v1/graduates/me",
-    "/api/v1/auth/me",
-    "/api/v1/users/me",
-    "/api/v1/graduates/profile",
-    "/api/v1/graduates/my-profile",
-  ];
+  const { data } = await axiosinstance.get("/api/v1/graduates/me", {
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
 
-  for (const endpoint of endpoints) {
-    try {
-      const { data } = await axiosinstance.get(endpoint, {
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-        },
-      });
-
-      console.log("WORKING PROFILE ENDPOINT:", endpoint);
-      return data;
-    } catch {
-      continue;
-    }
-  }
-
-  throw new Error("No profile endpoint worked");
+  return data;
 }
 
 async function updateProfile(body: Partial<Graduate>) {
@@ -61,11 +44,23 @@ async function updateProfile(body: Partial<Graduate>) {
   return data;
 }
 
+async function updateProfilePicture(file: File) {
+  const formData = new FormData();
+  formData.append("profilePicture", file);
+
+  const { data } = await axiosinstance.put("/api/v1/graduates/me", formData, {
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return data;
+}
+
 async function uploadCv(file: File) {
   const formData = new FormData();
   formData.append("cv", file);
-  formData.append("file", file);
-  formData.append("documents", file);
 
   const { data } = await axiosinstance.put(
     "/api/v1/graduates/me/documents",
@@ -84,8 +79,20 @@ async function uploadCv(file: File) {
 export default function ProfilePageGraduate() {
   const queryClient = useQueryClient();
 
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [cvName, setCvName] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [phone, setPhone] = useState("");
+
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    age: "",
+    university: "",
+    portfolioLink: "",
+    gitHubProfile: "",
+    linkedInProfile: "",
+  });
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["graduateProfile"],
@@ -94,14 +101,33 @@ export default function ProfilePageGraduate() {
     refetchOnWindowFocus: false,
   });
 
-  const graduate: Graduate =
-    data?.data || data?.graduate || data?.user || data || {};
+  const graduate: Graduate = data?.data || data || {};
+
+  useEffect(() => {
+    if (graduate.email) {
+      const savedImage = localStorage.getItem(
+        `profilePreviewImage_${graduate.email}`
+      );
+
+      const savedCv = localStorage.getItem(`graduateCvName_${graduate.email}`);
+
+      setPreviewImage(savedImage);
+      setCvName(savedCv);
+    }
+  }, [graduate.email]);
 
   const updateMutation = useMutation({
     mutationFn: updateProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["graduateProfile"] });
       setEditMode(false);
+    },
+  });
+
+  const profilePictureMutation = useMutation({
+    mutationFn: updateProfilePicture,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["graduateProfile"] });
     },
   });
 
@@ -113,14 +139,60 @@ export default function ProfilePageGraduate() {
   });
 
   function handleEdit() {
-    setPhone(graduate.phone || "");
+    setFormData({
+      fullName: graduate.fullName || "",
+      email: graduate.email || "",
+      phone: graduate.phone || "",
+      age: graduate.age?.toString() || "",
+      university: graduate.university || "",
+      portfolioLink: graduate.portfolioLink || "",
+      gitHubProfile: graduate.gitHubProfile || "",
+      linkedInProfile: graduate.linkedInProfile || "",
+    });
+
     setEditMode(true);
   }
 
   function handleSave() {
     updateMutation.mutate({
-      phone,
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      age: Number(formData.age),
+      university: formData.university,
+      portfolioLink: formData.portfolioLink,
+      gitHubProfile: formData.gitHubProfile,
+      linkedInProfile: formData.linkedInProfile,
     });
+  }
+
+  function handleProfileImage(file: File) {
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setPreviewImage(base64);
+
+      if (graduate.email) {
+        localStorage.setItem(
+          `profilePreviewImage_${graduate.email}`,
+          base64
+        );
+      }
+    };
+
+    reader.readAsDataURL(file);
+    profilePictureMutation.mutate(file);
+  }
+
+  function handleCvFile(file: File) {
+    setCvName(file.name);
+
+    if (graduate.email) {
+      localStorage.setItem(`graduateCvName_${graduate.email}`, file.name);
+    }
+
+    uploadMutation.mutate(file);
   }
 
   const initials =
@@ -131,11 +203,10 @@ export default function ProfilePageGraduate() {
       .toUpperCase()
       .slice(0, 2) || "G";
 
-  const cvFileName = graduate.cv ? graduate.cv.split("/").pop() : null;
+  const cvFileName =
+    cvName || (graduate.cv ? graduate.cv.split("/").pop() : null);
 
-  if (isLoading) {
-    return <div className="p-10 text-center">Loading...</div>;
-  }
+  if (isLoading) return <div className="p-10 text-center">Loading...</div>;
 
   if (isError) {
     return (
@@ -150,12 +221,6 @@ export default function ProfilePageGraduate() {
       <h1 className="mb-6 text-2xl font-semibold text-gray-800">
         Profile
       </h1>
-
-      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <StatCard title="Profile Completion" value="75%" sub="Almost done" />
-        <StatCard title="Exams Done" value="2/3" sub="Technical remaining" />
-        <StatCard title="Job Offers" value="0" sub="Awaiting your reply" />
-      </div>
 
       <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         <div className="mb-6 flex items-center justify-between">
@@ -191,12 +256,54 @@ export default function ProfilePageGraduate() {
         </div>
 
         <div className="flex gap-6">
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-2xl font-semibold text-white">
-            {initials}
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-indigo-600 text-2xl font-semibold text-white">
+              {previewImage ? (
+                <img
+                  src={previewImage}
+                  alt="profile"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initials
+              )}
+            </div>
+
+            <label className="cursor-pointer rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleProfileImage(file);
+                }}
+              />
+
+              {profilePictureMutation.isPending
+                ? "Uploading..."
+                : "Update Photo"}
+            </label>
+
+            {profilePictureMutation.isSuccess && (
+              <p className="text-xs text-green-600">Photo saved</p>
+            )}
+
+            {profilePictureMutation.isError && (
+              <p className="text-xs text-red-500">Failed to upload photo</p>
+            )}
           </div>
 
           <div className="grid flex-1 grid-cols-1 gap-6 md:grid-cols-2">
-            <Info label="Name" value={graduate.fullName} />
+            <EditableInfo
+              label="Name"
+              value={graduate.fullName}
+              editMode={editMode}
+              inputValue={formData.fullName}
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, fullName: value }))
+              }
+            />
 
             <div>
               <p className="mb-1 text-xs text-gray-400">Track</p>
@@ -205,31 +312,47 @@ export default function ProfilePageGraduate() {
               </span>
             </div>
 
-            <Info label="Email" value={graduate.email} />
-
-            <div>
-              <p className="mb-1 text-xs text-gray-400">Phone</p>
-
-              {editMode ? (
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-indigo-400"
-                />
-              ) : (
-                <p className="text-sm text-gray-700">
-                  {graduate.phone || "-"}
-                </p>
-              )}
-            </div>
-
-            <Info
-              label="Age"
-              value={graduate.age ? `${graduate.age} years` : "-"}
+            <EditableInfo
+              label="Email"
+              value={graduate.email}
+              editMode={editMode}
+              inputValue={formData.email}
+              type="email"
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, email: value }))
+              }
             />
 
-            <Info label="University" value={graduate.university} />
+            <EditableInfo
+              label="Phone"
+              value={graduate.phone}
+              editMode={editMode}
+              inputValue={formData.phone}
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, phone: value }))
+              }
+            />
+
+            <EditableInfo
+              label="Age"
+              value={graduate.age ? `${graduate.age} years` : "-"}
+              editMode={editMode}
+              inputValue={formData.age}
+              type="number"
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, age: value }))
+              }
+            />
+
+            <EditableInfo
+              label="University"
+              value={graduate.university}
+              editMode={editMode}
+              inputValue={formData.university}
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, university: value }))
+              }
+            />
 
             <Info
               label="Graduation Year"
@@ -242,13 +365,13 @@ export default function ProfilePageGraduate() {
 
         {updateMutation.isSuccess && (
           <p className="mt-4 text-sm text-green-600">
-            Phone updated successfully
+            Profile updated successfully
           </p>
         )}
 
         {updateMutation.isError && (
           <p className="mt-4 text-sm text-red-500">
-            Failed to update phone
+            Failed to update profile
           </p>
         )}
       </div>
@@ -269,7 +392,7 @@ export default function ProfilePageGraduate() {
 
             {uploadMutation.isSuccess && (
               <p className="mt-1 text-xs text-green-600">
-                CV uploaded successfully
+                CV saved successfully
               </p>
             )}
 
@@ -287,7 +410,7 @@ export default function ProfilePageGraduate() {
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file) uploadMutation.mutate(file);
+                if (file) handleCvFile(file);
               }}
             />
 
@@ -307,29 +430,44 @@ export default function ProfilePageGraduate() {
   );
 }
 
-function StatCard({
-  title,
-  value,
-  sub,
-}: {
-  title: string;
-  value: string;
-  sub: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <p className="mb-1 text-sm text-gray-500">{title}</p>
-      <p className="mb-1 text-3xl font-semibold text-gray-800">{value}</p>
-      <p className="text-xs text-gray-400">{sub}</p>
-    </div>
-  );
-}
-
 function Info({ label, value }: { label: string; value?: string }) {
   return (
     <div>
       <p className="mb-1 text-xs text-gray-400">{label}</p>
       <p className="text-sm text-gray-700">{value || "-"}</p>
+    </div>
+  );
+}
+
+function EditableInfo({
+  label,
+  value,
+  editMode,
+  inputValue,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value?: string;
+  editMode: boolean;
+  inputValue: string;
+  onChange: (value: string) => void;
+  type?: string;
+}) {
+  return (
+    <div>
+      <p className="mb-1 text-xs text-gray-400">{label}</p>
+
+      {editMode ? (
+        <input
+          type={type}
+          value={inputValue}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-indigo-400"
+        />
+      ) : (
+        <p className="text-sm text-gray-700">{value || "-"}</p>
+      )}
     </div>
   );
 }

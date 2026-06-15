@@ -51,17 +51,22 @@ const navigate=useNavigate()
 toast.success('Login successfully 🎉')
 
 setTimeout(() => {
+  const params = new URLSearchParams(window.location.search);
+  const isSEB = params.get("seb") === "1";
 
-// AFTER — lowercase to match backend
-if(role === 'graduate'){
-  navigate('/dashboardgraduate')
-} else if(role === 'company'){
-  navigate('/dashboardCompany')
-} else if(role === 'admin'){
-  navigate('/dashboardadmin')
-}
-
-},3000)
+  if (role === "graduate") {
+    if (isSEB) {
+      sessionStorage.setItem("isSEB", "true");
+      navigate("/dashboardgraduate/assessmentspagegraduate?seb=1");
+    } else {
+      navigate("/dashboardgraduate");
+    }
+  } else if (role === "company") {
+    navigate("/dashboardCompany");
+  } else if (role === "admin") {
+    navigate("/dashboardadmin");
+  }
+}, 3000);
 
 
   }catch(error:any){

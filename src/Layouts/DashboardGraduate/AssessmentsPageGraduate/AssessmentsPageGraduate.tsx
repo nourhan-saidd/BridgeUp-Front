@@ -1,40 +1,113 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import axiosinstance from "@/Context/BaseUrl/AxiosInstance";
-import { Clock, FileText, Award } from "lucide-react";
+import {
+  Clock,
+  FileText,
+  Award,
+  X,
+  ShieldCheck,
+} from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-type Exam = {
+type Quiz = {
   _id?: string;
-  title: string;
-  description: string;
-  duration: string;
-  numberOfQuestions: number;
-  track: string;
+  id?: string;
+  quizId?: string;
+  title?: string;
+  description?: string;
+  duration?: string | number;
+  numberOfQuestions?: number;
+  questions?: unknown[];
+  track?: string;
 };
 
-async function getMyExams() {
-  const token =
+function getToken() {
+  return (
     localStorage.getItem("token") ||
     localStorage.getItem("userToken") ||
-    localStorage.getItem("jwt");
+    localStorage.getItem("jwt")
+  );
+}
 
-  const { data } = await axiosinstance.get("/api/v1/questions/my-exams", {
+async function getQuizzes() {
+  const { data } = await axiosinstance.get("/api/v1/quizzes", {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${getToken()}`,
     },
   });
 
   return data;
 }
 
-export default function MyExamsPageGraduate() {
+export default function AssessmentsPageGraduate() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const isSEB =
+    searchParams.get("seb") === "1" ||
+    sessionStorage.getItem("isSEB") === "true";
+
+  const [safeModalQuizId, setSafeModalQuizId] = useState<string | null>(null);
+  const [rulesQuiz, setRulesQuiz] = useState<Quiz | null>(null);
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["myExams"],
-    queryFn: getMyExams,
+    queryKey: ["quizzes"],
+    queryFn: getQuizzes,
     retry: false,
     refetchOnWindowFocus: false,
   });
 
-  const exams: Exam[] = data?.data || [];
+  const quizzes: Quiz[] = data?.data || data?.quizzes || [];
+
+  function getQuizId(quiz: Quiz) {
+    return quiz.quizId || quiz._id || quiz.id;
+  }
+
+  function handleStartClick(quiz: Quiz) {
+    const quizId = getQuizId(quiz);
+
+    if (!quizId) {
+      alert("Quiz ID not found");
+      return;
+    }
+
+    if (!isSEB) {
+      setSafeModalQuizId(quizId);
+      return;
+    }
+
+    setRulesQuiz(quiz);
+  }
+
+  function openSebConfig() {
+    if (!safeModalQuizId) return;
+
+    localStorage.setItem("currentQuizId", safeModalQuizId);
+
+    window.open(`${window.location.origin}/bridgeup.seb`, "_blank");
+  }
+
+  function downloadSafeExamBrowser() {
+    window.open("https://safeexambrowser.org/download_en.html", "_blank");
+  }
+
+  function startExamNow() {
+    if (!rulesQuiz) return;
+
+    const quizId = getQuizId(rulesQuiz);
+
+    if (!quizId) {
+      alert("Quiz ID not found");
+      return;
+    }
+
+    sessionStorage.setItem("currentQuizId", quizId);
+
+    navigate(
+      `/dashboardgraduate/assessmentquestionspagegraduate?quizId=${quizId}&seb=1`
+    );
+  }
 
   if (isLoading) return <div className="p-8">Loading...</div>;
 
@@ -45,7 +118,7 @@ export default function MyExamsPageGraduate() {
   return (
     <div className="min-h-screen bg-[#f7f7fb] p-8">
       <h1 className="mb-8 text-3xl font-bold text-gray-900">
-        My Exams
+        Assessments
       </h1>
 
       <div className="mb-6 flex items-center gap-4 rounded-2xl border border-[#dddaf3] bg-[#f0effb] p-6 shadow-sm">
@@ -58,51 +131,137 @@ export default function MyExamsPageGraduate() {
             Available Exams
           </h2>
           <p className="text-[#6f6d99]">
-            Complete your exams to improve your hiring chances.
+            Read the rules carefully before starting your attempt.
           </p>
         </div>
       </div>
 
       <div className="space-y-6">
-        {exams.map((exam, index) => (
+        {quizzes.map((quiz, index) => (
           <div
-            key={exam._id || index}
+            key={quiz._id || quiz.id || index}
             className="flex items-center justify-between rounded-2xl border border-[#dddaf3] bg-white p-6 shadow-sm"
           >
             <div>
               <div className="mb-3 flex items-center gap-3">
                 <h2 className="text-lg font-bold text-gray-900">
-                  {exam.title}
+                  {quiz.title || `Exam ${index + 1}`}
                 </h2>
 
                 <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs text-indigo-600">
-                  {exam.track}
+                  {quiz.track || "General"}
                 </span>
               </div>
 
               <p className="mb-5 text-[#6f6d99]">
-                {exam.description}
+                {quiz.description || "No description"}
               </p>
 
               <div className="flex gap-8 text-sm text-[#6f6d99]">
                 <span className="flex items-center gap-2">
                   <Clock size={16} />
-                  {exam.duration} minutes
+                  {quiz.duration || 0} minutes
                 </span>
 
                 <span className="flex items-center gap-2">
                   <FileText size={16} />
-                  {exam.numberOfQuestions} questions
+                  {quiz.numberOfQuestions || quiz.questions?.length || 0}{" "}
+                  questions
                 </span>
               </div>
             </div>
 
-            <button className="rounded-xl bg-[#5a4cc7] px-6 py-3 font-semibold text-white hover:bg-[#4b3fba]">
-              Start Exam
+            <button
+              onClick={() => handleStartClick(quiz)}
+              className="rounded-xl bg-[#5a4cc7] px-6 py-3 font-semibold text-white hover:bg-[#4b3fba]"
+            >
+              {isSEB ? "Start Attempt" : "Start Exam"}
             </button>
           </div>
         ))}
       </div>
+
+      {safeModalQuizId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">
+                Safe Exam Browser Required
+              </h2>
+
+              <button
+                onClick={() => setSafeModalQuizId(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <p className="mb-6 text-sm text-gray-600">
+              Please open the exam using Safe Exam Browser. If you already have
+              it installed, open the config file. If not, download it first.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={openSebConfig}
+                className="rounded-xl bg-[#5a4cc7] px-5 py-3 font-semibold text-white hover:bg-[#4b3fba]"
+              >
+                Open Safe Exam Browser Config
+              </button>
+
+              <button
+                onClick={downloadSafeExamBrowser}
+                className="rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Download Safe Exam Browser
+              </button>
+
+              <button
+                onClick={() => setSafeModalQuizId(null)}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rulesQuiz && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900">
+                <ShieldCheck className="text-[#5a4cc7]" />
+                Exam Rules
+              </h2>
+
+              <button
+                onClick={() => setRulesQuiz(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <ul className="mb-6 list-disc space-y-2 pl-5 text-sm text-gray-600">
+              <li>Do not close Safe Exam Browser during the exam.</li>
+              <li>Do not refresh or leave the exam page.</li>
+              <li>Answer all questions before submitting.</li>
+              <li>You may have only one attempt.</li>
+              <li>Make sure your internet connection is stable.</li>
+            </ul>
+
+            <button
+              onClick={startExamNow}
+              className="w-full rounded-xl bg-[#5a4cc7] px-5 py-3 font-semibold text-white hover:bg-[#4b3fba]"
+            >
+              Start Exam Now
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
