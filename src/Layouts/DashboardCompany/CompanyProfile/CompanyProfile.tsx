@@ -2,8 +2,6 @@ import { useContext, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosinstance from "@/Context/BaseUrl/AxiosInstance";
 import { authContext } from "@/Context/AuthContext/AuthContextProvider";
-import { Card, CardContent } from "@/Components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -27,8 +25,9 @@ import {
 // ── TYPES ──────────────────────────────────────────────────────────────────────
 interface Company {
   _id?: string;
-  companyName: string;
-  email: string;
+  id?: string;
+  companyName?: string;
+  email?: string;
   phone?: string;
   website?: string;
   location?: string;
@@ -41,6 +40,9 @@ interface Company {
 
 interface Stats {
   totalGraduates?: number;
+  frontendGraduates?: number;
+  backendGraduates?: number;
+  graduatesContacted?: number;
   shortlisted?: number;
   acceptedOffers?: number;
 }
@@ -103,37 +105,60 @@ const CompanyProfile = () => {
   const { data, isLoading, error } = useQuery<ProfileResponse>({
     queryKey: ["companyProfile"],
     queryFn: () =>
-      axiosinstance.get("api/v1/company/profile", authHeaders).then((r) => r.data),
+      axiosinstance
+        .get("api/v1/company/profile", authHeaders)
+        .then((r) => r.data),
     enabled: !!token,
   });
 
-  const company = data?.data?.company;
-  const stats   = data?.data?.stats;
+  // Safeguard empty objects safely
+  const company = data?.data?.company || {};
+  const stats = data?.data?.stats;
 
-  // ── PUT — only send non-empty fields ──
+  // ── PUT PROFILE ──
   const updateProfile = async (payload: FormState) => {
-    const body: Partial<FormState> = {};
-    (Object.keys(payload) as (keyof FormState)[]).forEach((key) => {
-      if (payload[key].trim() !== "") {
-        body[key] = payload[key].trim();
-      }
-    });
-    const res = await axiosinstance.put("api/v1/company/profile", body, authHeaders);
-    return res.data;
+    const body = {
+      companyName: payload.companyName.trim(),
+      phone: payload.phone.trim(),
+      website: payload.website.trim(),
+      location: payload.location.trim(),
+      companySize: payload.companySize,
+      industry: payload.industry,
+      description: payload.description.trim(),
+    };
+
+    const res = await axiosinstance.put(
+      "api/v1/company/profile",
+      body,
+      authHeaders
+    );
+    return res.data; // This returns the updated profile object from Postman!
   };
 
   const { mutate: saveProfile, isPending } = useMutation({
     mutationFn: updateProfile,
-    onSuccess: () => {
+    onSuccess: (updatedData) => {
+      // FIX: Manually update the cache data immediately so the screen updates instantly!
+      queryClient.setQueryData(["companyProfile"], (oldQueryData: ProfileResponse | undefined) => {
+        if (!oldQueryData) return updatedData;
+        return {
+          ...oldQueryData,
+          data: {
+            ...oldQueryData.data,
+            // Merge the updated company details directly into your display state
+            company: updatedData?.data?.company || updatedData?.company || updatedData?.data || company,
+          },
+        };
+      });
+
+      // Refetch in background just to stay perfectly synced with DB
       queryClient.invalidateQueries({ queryKey: ["companyProfile"] });
       setEditOpen(false);
     },
     onError: (err) => console.error("Update failed:", err),
   });
 
-  // ── Open edit — pre-fill with current values ──
   const handleEditOpen = () => {
-    if (!company) return;
     setForm({
       companyName: company.companyName || "",
       phone:       company.phone       || "",
@@ -146,11 +171,16 @@ const CompanyProfile = () => {
     setEditOpen(true);
   };
 
-  const handleSave = () => saveProfile(form);
+  const handleSave = () => {
+    if (!form.companyName || !form.phone || !form.industry || !form.companySize || !form.location) {
+      alert("Please fill in all required fields marked with *");
+      return;
+    }
+    saveProfile(form);
+  };
 
-  // ── INITIALS ──
   const getInitials = (name?: string) =>
-    (name || "")
+    (name || "Company")
       .split(" ")
       .slice(0, 2)
       .map((n) => n[0])
@@ -174,13 +204,10 @@ const CompanyProfile = () => {
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
 
-      {/* PAGE TITLE */}
       <h1 className="text-2xl font-bold text-gray-900">Company Profile</h1>
 
       {/* STATS CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-        {/* Graduates Contacted */}
         <div className="rounded-2xl p-5 bg-gradient-to-br from-[#7b74e6] to-[#5a4fcf] text-white shadow-md">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-medium opacity-90">Graduates Contacted</p>
@@ -188,11 +215,12 @@ const CompanyProfile = () => {
               <Users className="w-5 h-5 text-white" />
             </div>
           </div>
-          <p className="text-4xl font-bold">{stats?.totalGraduates ?? 0}</p>
+          <p className="text-4xl font-bold">
+            {stats?.graduatesContacted ?? stats?.totalGraduates ?? 0}
+          </p>
           <p className="text-xs mt-1 opacity-70">This month</p>
         </div>
 
-        {/* Shortlisted */}
         <div className="rounded-2xl p-5 bg-white border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-medium text-gray-500">Shortlisted</p>
@@ -200,11 +228,12 @@ const CompanyProfile = () => {
               <Bookmark className="w-5 h-5 text-[#6c63d4]" />
             </div>
           </div>
-          <p className="text-4xl font-bold text-gray-900">{stats?.shortlisted ?? 0}</p>
+          <p className="text-4xl font-bold text-gray-900">
+            {stats?.shortlisted ?? stats?.frontendGraduates ?? 0}
+          </p>
           <p className="text-xs mt-1 text-gray-400">This month</p>
         </div>
 
-        {/* Accepted Offers */}
         <div className="rounded-2xl p-5 bg-white border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-medium text-gray-500">Accepted Offers</p>
@@ -212,36 +241,32 @@ const CompanyProfile = () => {
               <CheckCircle className="w-5 h-5 text-[#6c63d4]" />
             </div>
           </div>
-          <p className="text-4xl font-bold text-gray-900">{stats?.acceptedOffers ?? 0}</p>
+          <p className="text-4xl font-bold text-gray-900">
+            {stats?.acceptedOffers ?? stats?.backendGraduates ?? 0}
+          </p>
           <p className="text-xs mt-1 text-gray-400">This month</p>
         </div>
-
       </div>
 
-      {/* PROFILE BANNER + INFO */}
+      {/* PROFILE DETAILS CARD */}
       <div className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm">
-
-        {/* Banner */}
         <div className="h-36 bg-gradient-to-r from-[#7b74e6] to-[#5a4fcf]" />
 
-        {/* Avatar + Name row */}
         <div className="px-6 pb-6">
           <div className="flex items-end justify-between -mt-12 mb-4">
-
-            {/* Avatar */}
             <div className="w-24 h-24 rounded-2xl bg-white border-4 border-white shadow-lg flex items-center justify-center text-[#6c63d4] font-bold text-2xl overflow-hidden">
               {company?.logo ? (
                 <img
-                  src={`http://localhost:5000/${company.logo}`}
+                  src={`http://localhost:5000/${company.logo.replace(/^\//, "")}`}
                   alt="logo"
                   className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
                 />
               ) : (
                 getInitials(company?.companyName)
               )}
             </div>
 
-            {/* Edit Button */}
             <button
               onClick={handleEditOpen}
               className="flex items-center gap-2 px-5 py-2 rounded-xl bg-[#6c63d4] text-white text-sm font-semibold hover:bg-[#5a4fcf] transition-colors"
@@ -251,89 +276,48 @@ const CompanyProfile = () => {
             </button>
           </div>
 
-          {/* Name + Status + Industry */}
           <div className="mb-5">
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-xl font-bold text-gray-900">{company?.companyName}</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {company?.companyName || "No Company Setup Yet"}
+              </h2>
               {company?.isApproved && (
                 <span className="px-3 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
                   Active
                 </span>
               )}
               {company?.industry && (
-                <span className="text-sm text-[#6c63d4] font-medium">{company.industry}</span>
+                <span className="text-sm text-[#6c63d4] font-medium">
+                  {company.industry}
+                </span>
               )}
             </div>
           </div>
 
-          {/* Info Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50">
-              <div className="w-9 h-9 rounded-full bg-[#f0eeff] flex items-center justify-center shrink-0">
-                <Mail className="w-4 h-4 text-[#6c63d4]" />
+            {[
+              { icon: <Mail className="w-4 h-4 text-[#6c63d4]" />,      label: "Email Address", value: company?.email },
+              { icon: <Phone className="w-4 h-4 text-[#6c63d4]" />,     label: "Phone Number",  value: company?.phone },
+              { icon: <Globe className="w-4 h-4 text-[#6c63d4]" />,     label: "Website",       value: company?.website },
+              { icon: <MapPin className="w-4 h-4 text-[#6c63d4]" />,    label: "Location",      value: company?.location },
+              { icon: <Briefcase className="w-4 h-4 text-[#6c63d4]" />, label: "Industry",      value: company?.industry },
+              { icon: <Building2 className="w-4 h-4 text-[#6c63d4]" />, label: "Company Size",  value: company?.companySize },
+            ].map(({ icon, label, value }) => (
+              <div key={label} className="flex items-center gap-3 p-4 rounded-xl bg-gray-50">
+                <div className="w-9 h-9 rounded-full bg-[#f0eeff] flex items-center justify-center shrink-0">
+                  {icon}
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+                  <p className="text-sm font-medium text-gray-800">{value || "—"}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Email Address</p>
-                <p className="text-sm font-medium text-gray-800">{company?.email || "—"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50">
-              <div className="w-9 h-9 rounded-full bg-[#f0eeff] flex items-center justify-center shrink-0">
-                <Phone className="w-4 h-4 text-[#6c63d4]" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Phone Number</p>
-                <p className="text-sm font-medium text-gray-800">{company?.phone || "—"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50">
-              <div className="w-9 h-9 rounded-full bg-[#f0eeff] flex items-center justify-center shrink-0">
-                <Globe className="w-4 h-4 text-[#6c63d4]" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Website</p>
-                <p className="text-sm font-medium text-gray-800">{company?.website || "—"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50">
-              <div className="w-9 h-9 rounded-full bg-[#f0eeff] flex items-center justify-center shrink-0">
-                <MapPin className="w-4 h-4 text-[#6c63d4]" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Location</p>
-                <p className="text-sm font-medium text-gray-800">{company?.location || "—"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50">
-              <div className="w-9 h-9 rounded-full bg-[#f0eeff] flex items-center justify-center shrink-0">
-                <Briefcase className="w-4 h-4 text-[#6c63d4]" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Industry</p>
-                <p className="text-sm font-medium text-gray-800">{company?.industry || "—"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-gray-50">
-              <div className="w-9 h-9 rounded-full bg-[#f0eeff] flex items-center justify-center shrink-0">
-                <Building2 className="w-4 h-4 text-[#6c63d4]" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-0.5">Company Size</p>
-                <p className="text-sm font-medium text-gray-800">{company?.companySize || "—"}</p>
-              </div>
-            </div>
-
+            ))}
           </div>
         </div>
       </div>
 
-      {/* ABOUT */}
+      {/* ABOUT CARD */}
       <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6">
         <h3 className="text-base font-bold text-gray-900 mb-3">About</h3>
         {company?.description ? (
@@ -345,10 +329,9 @@ const CompanyProfile = () => {
         )}
       </div>
 
-      {/* EDIT DIALOG */}
+      {/* DIALOG FORM */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-gray-900">
               Edit Company Profile
@@ -359,8 +342,6 @@ const CompanyProfile = () => {
           </DialogHeader>
 
           <div className="space-y-4 mt-2">
-
-            {/* Company Name */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Company Name <span className="text-red-500">*</span>
@@ -373,7 +354,6 @@ const CompanyProfile = () => {
               />
             </div>
 
-            {/* Email (read-only) */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Email Address
@@ -384,10 +364,8 @@ const CompanyProfile = () => {
                 disabled
                 className="w-full h-11 px-4 rounded-xl border border-gray-100 bg-gray-50 text-gray-400 outline-none text-sm cursor-not-allowed"
               />
-              <p className="text-xs text-gray-400 mt-1">Email cannot be changed</p>
             </div>
 
-            {/* Phone + Website */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -401,9 +379,7 @@ const CompanyProfile = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">
-                  Website
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Website</label>
                 <input
                   type="text"
                   value={form.website}
@@ -414,7 +390,6 @@ const CompanyProfile = () => {
               </div>
             </div>
 
-            {/* Industry + Company Size */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -448,7 +423,6 @@ const CompanyProfile = () => {
               </div>
             </div>
 
-            {/* Location */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Location <span className="text-red-500">*</span>
@@ -462,7 +436,6 @@ const CompanyProfile = () => {
               />
             </div>
 
-            {/* Description */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
                 Description
@@ -475,10 +448,8 @@ const CompanyProfile = () => {
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none focus:border-[#6c63d4] focus:ring-2 focus:ring-[#6c63d4]/20 transition text-sm resize-none"
               />
             </div>
-
           </div>
 
-          {/* Actions */}
           <div className="flex justify-end gap-3 mt-4">
             <button
               onClick={() => setEditOpen(false)}
@@ -494,10 +465,8 @@ const CompanyProfile = () => {
               {isPending ? "Saving..." : "Save Changes"}
             </button>
           </div>
-
         </DialogContent>
       </Dialog>
-
     </div>
   );
 };

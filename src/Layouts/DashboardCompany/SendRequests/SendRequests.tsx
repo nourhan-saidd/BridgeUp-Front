@@ -40,8 +40,10 @@ interface StatsResponse {
   };
 }
 
-const getInitials = (name: string) =>
-  name.split(" ").slice(0, 2).map((n) => n[0]).join("").toUpperCase();
+const getInitials = (name: string) => {
+  if (!name?.trim()) return "?";
+  return name.split(" ").filter(Boolean).slice(0, 2).map((n) => n[0]).join("").toUpperCase();
+};
 
 const timeAgo = (dateStr: string) => {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -58,6 +60,19 @@ const statusConfig: Record<string, { badge: string; label: string }> = {
   pending:  { badge: "bg-yellow-50 text-yellow-600 hover:bg-yellow-50", label: "Pending" },
   accepted: { badge: "bg-green-50 text-green-600 hover:bg-green-50",   label: "Accepted" },
   declined: { badge: "bg-red-50 text-red-500 hover:bg-red-50",         label: "Rejected" },
+};
+
+// Helper function to solve backend storage path anomalies
+const resolveImagePath = (path: string | null | undefined): string => {
+  if (!path || path.trim() === "") return "";
+  if (path.startsWith("http")) return path;
+  if (path.includes("\\uploads\\")) {
+    return `http://localhost:5000/uploads/${path.split("\\uploads\\")[1]}`;
+  }
+  if (path.includes("/uploads/")) {
+    return `http://localhost:5000/uploads/${path.split("/uploads/")[1]}`;
+  }
+  return `http://localhost:5000${path.startsWith("/") ? "" : "/"}${path}`;
 };
 
 const StatCard = ({ label, value, color }: { label: string; value: number; color: string }) => (
@@ -119,20 +134,34 @@ const SendRequests = () => {
       <div className="space-y-3">
         {offers.map((offer) => {
           const cfg = statusConfig[offer.status] ?? statusConfig.pending;
+          const imageUrl = resolveImagePath(offer.graduate.profilePicture);
+
           return (
             <Card key={offer._id} className="border border-[#e8e4ff] shadow-sm hover:shadow-md transition-shadow">
               <CardContent className="px-5 py-4 flex items-center gap-4">
-                {offer.graduate.profilePicture ? (
-                  <img
-                    src={offer.graduate.profilePicture}
-                    alt={offer.graduate.fullName}
-                    className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-[#f3f0ff] text-[#6c63ff] flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                
+                {/* Fixed Image Area with standard fallback safety */}
+                <div className="w-10 h-10 flex-shrink-0 relative">
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={offer.graduate.fullName}
+                      className="w-full h-full rounded-full object-cover border border-gray-100"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        const f = document.getElementById(`f-offer-${offer._id}`);
+                        if (f) f.style.display = "flex";
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    id={`f-offer-${offer._id}`}
+                    className="w-full h-full rounded-full bg-[#f3f0ff] text-[#6c63ff] flex items-center justify-center text-xs font-bold border border-[#e8e4ff]"
+                    style={{ display: imageUrl ? "none" : "flex" }}
+                  >
                     {getInitials(offer.graduate.fullName)}
                   </div>
-                )}
+                </div>
 
                 <div className="flex-1">
                   <p className="font-semibold text-[#111033] text-sm">{offer.graduate.fullName}</p>

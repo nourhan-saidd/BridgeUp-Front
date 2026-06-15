@@ -204,6 +204,8 @@ const GraduateCard = ({
   const eng  = grad.englishScore   ?? grad.scores?.english   ?? 0;
   const tech = grad.technicalScore ?? grad.scores?.technical ?? 0;
 
+  const hasPicture = grad.profilePicture && grad.profilePicture.trim() !== "";
+
   return (
     <Card className="border border-[#e8e4ff] shadow-sm hover:shadow-md transition-shadow">
       <CardContent className="p-5 relative">
@@ -216,15 +218,41 @@ const GraduateCard = ({
           <Star className={`w-4 h-4 ${isShortlisted ? "fill-yellow-400 text-yellow-400" : ""}`} />
         </button>
 
-        {/* Avatar */}
-        {grad.profilePicture && !grad.profilePicture.includes("default") ? (
-          <img src={grad.profilePicture} alt={grad.fullName}
-            className="w-12 h-12 rounded-full object-cover mb-3" />
-        ) : (
-          <div className="w-12 h-12 rounded-full bg-[#111033] text-white flex items-center justify-center text-sm font-semibold mb-3">
+        {/* Profile Avatar Outer Wrapper Container */}
+        <div className="w-12 h-12 mb-3 relative overflow-hidden rounded-full border border-gray-100 shadow-sm bg-[#f3f0ff]">
+          {hasPicture ? (
+            <img
+              src={
+                (() => {
+                  if (grad.profilePicture.startsWith("http")) return grad.profilePicture;
+                  if (grad.profilePicture.includes("\\uploads\\")) {
+                    return `http://localhost:5000/uploads/${grad.profilePicture.split("\\uploads\\")[1]}`;
+                  }
+                  if (grad.profilePicture.includes("/uploads/")) {
+                    return `http://localhost:5000/uploads/${grad.profilePicture.split("/uploads/")[1]}`;
+                  }
+                  return `http://localhost:5000${grad.profilePicture.startsWith("/") ? "" : "/"}${grad.profilePicture}`;
+                })()
+              }
+              alt={grad.fullName}
+              className="w-full h-full object-cover absolute inset-0 z-10"
+              onError={(e) => {
+                // Instantly hide the broken image item so the clean initials fallback div can show below it
+                e.currentTarget.style.display = "none";
+                const fallbackElement = document.getElementById(`fallback-browse-${grad._id}`);
+                if (fallbackElement) fallbackElement.style.zIndex = "20";
+              }}
+            />
+          ) : null}
+
+          {/* Secure Initials Fallback */}
+          <div
+            id={`fallback-browse-${grad._id}`}
+            className="w-full h-full absolute inset-0 flex items-center justify-center text-[#6c63ff] font-bold text-xs"
+          >
             {getInitials(grad.fullName)}
           </div>
-        )}
+        </div>
 
         <h3 className="font-semibold text-[#111033] text-sm truncate pr-6">{grad.fullName}</h3>
         <Badge className="bg-[#f3f0ff] text-[#6c63ff] hover:bg-[#f3f0ff] mb-3 mt-1 text-xs">
