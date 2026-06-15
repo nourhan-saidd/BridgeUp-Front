@@ -57,7 +57,7 @@ setTimeout(() => {
   if (role === "graduate") {
     if (isSEB) {
       sessionStorage.setItem("isSEB", "true");
-      navigate("/dashboardgraduate/assessmentspagegraduate?seb=1");
+    navigate("/dashboardgraduate/assessmentspagegraduate");
     } else {
       navigate("/dashboardgraduate");
     }
