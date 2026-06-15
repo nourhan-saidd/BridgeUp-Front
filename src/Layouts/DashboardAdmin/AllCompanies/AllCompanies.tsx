@@ -72,8 +72,8 @@ const downloadFile = async (filePath) => {
     );
   }
 };
-console.log("Commercial:", companyDetails?.commercialRegister);
-console.log("Tax:", companyDetails?.taxCard);
+console.log(companyDetails?.commercialRegister);
+console.log(companyDetails?.taxCard);
   // ================= GET COMPANIES =================
   const getCompanies = async () => {
     const params = { status: "approved" };
