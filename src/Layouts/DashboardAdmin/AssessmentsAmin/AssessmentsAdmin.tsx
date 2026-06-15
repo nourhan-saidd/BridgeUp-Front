@@ -267,12 +267,34 @@ export default function AssessmentsAdmin() {
               {quiz.quiz.title}
             </h2>
 
-            <p className="mt-3 text-center">{quiz.quiz.description}</p>
-            <p className="text-center">Track: {quiz.quiz.track}</p>
-            <p className="text-center">Duration: {quiz.quiz.duration} min</p>
-            <p className="text-center">
-              Questions: {quiz.quiz.numberOfQuestions}
-            </p>
+          <p className="text-center text-gray-600 mt-3 mb-6">
+  {quiz.quiz.description}
+</p>
+
+<div className="grid grid-cols-3 gap-4 max-w-xl mx-auto">
+  
+  <div className="bg-violet-50 rounded-2xl p-4 text-center">
+    <p className="text-sm text-gray-500">Track</p>
+    <p className="font-bold text-[#5b4b8a]">
+      {quiz.quiz.track}
+    </p>
+  </div>
+
+  <div className="bg-violet-50 rounded-2xl p-4 text-center">
+    <p className="text-sm text-gray-500">Duration</p>
+    <p className="font-bold text-[#5b4b8a]">
+      {quiz.quiz.duration} min
+    </p>
+  </div>
+
+  <div className="bg-violet-50 rounded-2xl p-4 text-center">
+    <p className="text-sm text-gray-500">Questions</p>
+    <p className="font-bold text-[#5b4b8a]">
+      {quiz.quiz.numberOfQuestions}
+    </p>
+  </div>
+
+</div>
           </div>
         ))}
 

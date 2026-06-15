@@ -33,29 +33,47 @@ export default function AllCompanies() {
   };
 
   // ================= DOWNLOAD FILE =================
-  const downloadFile = async (path, filename) => {
-    try {
-      const response = await axiosinstance.get(path, {
-        responseType: "blob",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
-
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.response?.data?.message || "Download failed");
+const downloadFile = async (filePath) => {
+  try {
+    if (!filePath) {
+      toast.error("File not found");
+      return;
     }
-  };
 
+    const filename = filePath.split("/").pop();
+
+    const response = await axiosinstance.get(
+      `api/v1/download/${filename}`,
+      {
+        responseType: "blob",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const blobUrl = window.URL.createObjectURL(response.data);
+
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(blobUrl);
+
+    toast.success("File downloaded successfully");
+  } catch (err) {
+    console.error(err);
+    toast.error(
+      err?.response?.data?.message || "Download failed"
+    );
+  }
+};
+console.log("Commercial:", companyDetails?.commercialRegister);
+console.log("Tax:", companyDetails?.taxCard);
   // ================= GET COMPANIES =================
   const getCompanies = async () => {
     const params = { status: "approved" };
@@ -289,26 +307,23 @@ export default function AllCompanies() {
 
                 {/* FILES */}
                 <div className="space-y-2">
-                  <button
-                    onClick={() =>
-                      downloadFile(
-                        companyDetails?.commercialRegister,
-                        "commercial.pdf"
-                      )
-                    }
-                    className="w-full bg-green-50 p-3 rounded-xl text-green-700"
-                  >
-                    Download Commercial Register
-                  </button>
+                <button
+  onClick={() =>
+    downloadFile(companyDetails?.commercialRegister)
+  }
+  className="w-full bg-green-50 p-3 rounded-xl text-green-700"
+>
+  Download Commercial Register
+</button>
 
                   <button
-                    onClick={() =>
-                      downloadFile(companyDetails?.taxCard, "tax.pdf")
-                    }
-                    className="w-full bg-green-50 p-3 rounded-xl text-green-700"
-                  >
-                    Download Tax Card
-                  </button>
+  onClick={() =>
+    downloadFile(companyDetails?.taxCard)
+  }
+  className="w-full bg-green-50 p-3 rounded-xl text-green-700"
+>
+  Download Tax Card
+</button>
                 </div>
               </div>
             </>

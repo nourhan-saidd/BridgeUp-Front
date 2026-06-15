@@ -21,27 +21,45 @@ export default function PendingCompany() {
   // ================= FILE URL =================
   const fileUrl = (path) => {
     if (!path) return "";
-    return `${axiosinstance.defaults.baseURL}/${path}`.replace(/([^:]\/)\/+/g, "$1");
+    return `${axiosinstance.defaults.baseURL}/${path}`.replace(
+      /([^:]\/)\/+/g,
+      "$1"
+    );
   };
 
-  // ================= DOWNLOAD FILE =================
-  const downloadFile = async (path, filename) => {
+  // ================= DOWNLOAD FILE (FIXED) =================
+  const downloadFile = async (filePath) => {
     try {
-      const response = await axiosinstance.get(path, {
-        responseType: "blob",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (!filePath) {
+        toast.error("File not found");
+        return;
+      }
 
-      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const filename = filePath.split("/").pop();
+
+      const response = await axiosinstance.get(
+        `/api/v1/download/${filename}`,
+        {
+          responseType: "blob",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const blobUrl = window.URL.createObjectURL(response.data);
 
       const link = document.createElement("a");
       link.href = blobUrl;
       link.download = filename;
+
       document.body.appendChild(link);
       link.click();
-      link.remove();
+      document.body.removeChild(link);
 
       window.URL.revokeObjectURL(blobUrl);
+
+      toast.success("File downloaded successfully");
     } catch (err) {
       console.error(err);
       toast.error(err?.response?.data?.message || "Download failed");
@@ -121,8 +139,11 @@ export default function PendingCompany() {
     }
   };
 
-  if (isLoading) return <div className="text-center py-20">Loading...</div>;
-  if (error) return <div className="text-center py-20 text-red-500">Error</div>;
+  if (isLoading)
+    return <div className="text-center py-20">Loading...</div>;
+
+  if (error)
+    return <div className="text-center py-20 text-red-500">Error</div>;
 
   return (
     <>
@@ -147,7 +168,10 @@ export default function PendingCompany() {
               {company?.companyName?.charAt(0)}
             </div>
 
-            <h3 className="font-bold text-xl">{company?.companyName}</h3>
+            <h3 className="font-bold text-xl">
+              {company?.companyName}
+            </h3>
+
             <p className="text-gray-500">{company?.email}</p>
 
             <div className="text-sm mt-3 space-y-1">
@@ -212,7 +236,9 @@ export default function PendingCompany() {
                     <h2 className="text-xl font-bold">
                       {companyDetails?.companyName}
                     </h2>
-                    <p className="text-gray-500">{companyDetails?.email}</p>
+                    <p className="text-gray-500">
+                      {companyDetails?.email}
+                    </p>
                   </div>
                 </div>
 
@@ -242,8 +268,7 @@ export default function PendingCompany() {
                   <button
                     onClick={() =>
                       downloadFile(
-                        companyDetails?.commercialRegister,
-                        "commercial.pdf"
+                        companyDetails?.commercialRegister
                       )
                     }
                     className="w-full bg-green-50 p-3 rounded-xl text-green-700"
@@ -253,7 +278,7 @@ export default function PendingCompany() {
 
                   <button
                     onClick={() =>
-                      downloadFile(companyDetails?.taxCard, "tax.pdf")
+                      downloadFile(companyDetails?.taxCard)
                     }
                     className="w-full bg-green-50 p-3 rounded-xl text-green-700"
                   >
